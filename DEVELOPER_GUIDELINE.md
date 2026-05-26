@@ -61,20 +61,20 @@ Jika ingin membuat fitur baru (misal: Feed):
 
 ---
 
-## 📋 Alokasi Tugas Tim (WBS 3 Developer)
+## 📋 Alokasi Tugas Tim (WBS 3 Developer - Durasi 2 Minggu)
 
-Untuk kenyamanan kerja bersama, pembagian tugas dibagi secara adil di antara **3 Developer**:
+Untuk kenyamanan kerja bersama, waktu pengembangan dibatasi selama **2 Minggu (14 Hari)**. Pembagian tugas dibagi secara adil di antara **3 Developer**:
 
 ### 👨‍💻 Developer A: Arsitektur Utama, Autentikasi & Admin Control
 * **Modul Core & Auth (`lib/features/auth/` & `lib/app/`)**: Konfigurasi GoRouter, inisialisasi Firebase, tema dasar, dan fitur login/register multi-role.
-* **Modul Admin Control (`lib/features/admin_panel/`)**: Moderasi laporan, verifikasi akun pejabat baru, dan analitik.
+* **Modul Admin Control & Global Stats (`lib/features/admin_panel/`)**: Moderasi laporan, verifikasi akun pejabat baru, dan pembuatan halaman **Statistik Global** untuk Admin (grafik kinerja nasional/seluruh wilayah).
 
 ### 👨‍💻 Developer B: Feed Utama & Interaksi Sosial
 * **Modul Feed & Engagement (`lib/features/feed/`)**: List feed laporan, sorting (upvote/terbaru/terdekat), interaksi Upvote/Downvote, komentar umum, dan pinned official comments.
 
 ### 👨‍💻 Developer C: Pembuatan Laporan, Integrasi GPS & Dashboard Pejabat
 * **Modul Report Creation (`lib/features/report_creation/`)**: Halaman tambah laporan, kamera picker, upload Firebase Storage, integrasi Google Maps SDK (pinpoint lokasi).
-* **Modul Pejabat Dashboard (`lib/features/pejabat_dashboard/`)**: Peta wilayah kerja pejabat, update status laporan (Dilaporkan -> Selesai) dengan lampiran foto bukti.
+* **Modul Pejabat Dashboard & Regional Stats (`lib/features/pejabat_dashboard/`)**: Peta wilayah kerja pejabat, update status laporan (Dilaporkan -> Selesai) dengan lampiran foto bukti, dan pembuatan halaman **Statistik Regional** untuk Pejabat setempat (data infografis terfilter otomatis sesuai wilayah kerjanya).
 
 ---
 
