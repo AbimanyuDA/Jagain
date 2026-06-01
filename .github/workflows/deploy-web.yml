@@ -25,7 +25,6 @@ jobs:
         uses: FirebaseExtended/action-hosting-deploy@v0
         with:
           repoToken: '${{ secrets.GITHUB_TOKEN }}'
-          projectId: jagain-apps
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_JAGAIN_REAL }}' 
+          projectId: jagain-apps 
           channelId: live
-        env:
-          FIREBASE_TOKEN: '${{ secrets.FIREBASE_TOKEN }}'
