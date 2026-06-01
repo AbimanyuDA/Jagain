@@ -1,0 +1,29 @@
+name: Deploy to Firebase Hosting on Merge
+on:
+  push:
+    branches:
+      - main # Sesuai dengan branch utama Anda di gambar
+
+jobs:
+  build_and_deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+
+      - name: Build Flutter Web
+        run: |
+          flutter pub get
+          flutter build web
+
+      - name: Deploy to Firebase Hosting
+        uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: '${{ secrets.GITHUB_TOKEN }}'
+          firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_JAGAINGIT_37986733 }}'
+          projectId: jagaingit-37986733
+          channelId: live
