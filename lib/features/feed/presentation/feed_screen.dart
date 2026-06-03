@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import '../../../app/routes.dart';
 
 class FeedScreen extends StatelessWidget {
   const FeedScreen({super.key});
@@ -92,7 +94,7 @@ class FeedScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
-          // TODO: Navigasi ke Buat Laporan
+          context.push(AppRoutes.createReport);
         },
         label: const Text('Buat Laporan'),
         icon: const Icon(Icons.add_photo_alternate),
