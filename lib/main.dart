@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'app/routes.dart';
 import 'core/theme/theme.dart';
+import 'firebase_options.dart';
+import 'features/auth/data/auth_repository.dart';
+import 'features/auth/presentation/bloc/auth_bloc.dart';
+import 'features/auth/presentation/bloc/auth_event.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
-  // =========================================================================
-  // CATATAN UNTUK DEVELOPER:
-  // Jalankan perintah "flutterfire configure" di root terminal untuk 
-  // menghasilkan berkas firebase_options.dart yang berisi konfigurasi Firebase.
-  // Setelah selesai, impor DefaultFirebaseOptions dan tambahkan parameter 'options'.
-  // =========================================================================
+
+  await dotenv.load(fileName: ".env");
+
   try {
-    await Firebase.initializeApp();
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
   } catch (e) {
     debugPrint("Pemberitahuan: Inisialisasi Firebase gagal.");
     debugPrint("Harap jalankan 'flutterfire configure' untuk menghubungkan aplikasi dengan Firebase console Anda.");
@@ -28,11 +32,15 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      title: 'Jagain',
-      theme: AppTheme.lightTheme,
-      routerConfig: AppRoutes.router,
-      debugShowCheckedModeBanner: false,
+    return BlocProvider(
+      create: (_) => AuthBloc(repository: AuthRepository())
+        ..add(AuthCheckRequested()),
+      child: MaterialApp.router(
+        title: 'Jagain',
+        theme: AppTheme.lightTheme,
+        routerConfig: AppRoutes.router,
+        debugShowCheckedModeBanner: false,
+      ),
     );
   }
 }

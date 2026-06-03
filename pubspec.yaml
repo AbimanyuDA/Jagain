@@ -45,6 +45,7 @@ dependencies:
   geolocator: ^14.0.2
   geocoding: ^3.0.0
   equatable: ^2.0.8
+  flutter_dotenv: ^5.2.1
   image_picker: ^1.1.0
   camera: ^0.11.0
   gal: ^2.3.0
@@ -70,6 +71,9 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+    - .env
 
   # To add assets to your application, add an assets section, like this:
   # assets:
