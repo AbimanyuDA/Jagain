@@ -101,6 +101,77 @@ class AuthRepository {
     }
   }
 
+  Future<UserModel> updateProfile({
+    required String uid,
+    String? name,
+    String? username,
+    String? avatarUrl,
+  }) async {
+    final updates = <String, dynamic>{};
+    if (name != null) updates['name'] = name;
+    if (username != null) updates['username'] = username;
+    if (avatarUrl != null) updates['avatarUrl'] = avatarUrl;
+
+    if (updates.isNotEmpty) {
+      await _firestore.collection('users').doc(uid).update(updates);
+    }
+
+    final updated = await getUser(uid);
+    if (updated == null) {
+      throw Exception('Gagal memuat ulang data profil setelah pembaruan.');
+    }
+
+    if (updates.isNotEmpty) {
+      try {
+        final reportsQuery = await _firestore
+            .collection('reports')
+            .where('authorId', isEqualTo: uid)
+            .get();
+
+        final commentsQuery = await _firestore
+            .collectionGroup('comments')
+            .where('authorId', isEqualTo: uid)
+            .get();
+
+        if (reportsQuery.docs.isNotEmpty || commentsQuery.docs.isNotEmpty) {
+          final batch = _firestore.batch();
+          
+          String badge = 'Citizen Reporter';
+          if (updated.role == UserRole.official) {
+            badge = 'Pejabat';
+          } else if (updated.role == UserRole.admin) {
+            badge = 'Admin';
+          } else if (updated.isVerified) {
+            badge = 'Verified';
+          }
+
+          for (final doc in reportsQuery.docs) {
+            batch.update(doc.reference, {
+              'authorName': updated.name,
+              'authorUsername': updated.username,
+              'authorAvatarUrl': updated.avatarUrl,
+              'authorBadge': badge,
+            });
+          }
+
+          for (final doc in commentsQuery.docs) {
+            batch.update(doc.reference, {
+              'authorName': updated.name,
+              'authorUsername': updated.username,
+              'authorAvatarUrl': updated.avatarUrl,
+            });
+          }
+
+          await batch.commit();
+        }
+      } catch (e) {
+        print('Error syncing reports/comments: $e');
+      }
+    }
+
+    return updated;
+  }
+
   Future<UserModel?> getUserByUsername(String username) async {
     try {
       final query = await _firestore

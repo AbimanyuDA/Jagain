@@ -53,15 +53,68 @@ class AdminRepository {
         );
   }
 
-  Future<void> verifyOfficial(String uid) {
-    return _users.doc(uid).update({'isVerified': true});
+  Future<void> verifyOfficial(String uid) async {
+    await _users.doc(uid).update({'isVerified': true});
+    await _syncUserReportsAndComments(uid);
   }
 
-  Future<void> rejectOfficial(String uid) {
-    return _users.doc(uid).update({
+  Future<void> rejectOfficial(String uid) async {
+    await _users.doc(uid).update({
       'role': UserRole.citizen.name,
       'isVerified': false,
     });
+    await _syncUserReportsAndComments(uid);
+  }
+
+  Future<void> _syncUserReportsAndComments(String uid) async {
+    try {
+      final userSnap = await _users.doc(uid).get();
+      if (!userSnap.exists || userSnap.data() == null) return;
+      final user = UserModel.fromMap(uid, userSnap.data()!);
+
+      final reportsQuery = await _reports
+          .where('authorId', isEqualTo: uid)
+          .get();
+
+      final commentsQuery = await _firestore
+          .collectionGroup('comments')
+          .where('authorId', isEqualTo: uid)
+          .get();
+
+      if (reportsQuery.docs.isNotEmpty || commentsQuery.docs.isNotEmpty) {
+        final batch = _firestore.batch();
+
+        String badge = 'Citizen Reporter';
+        if (user.role == UserRole.official) {
+          badge = 'Pejabat';
+        } else if (user.role == UserRole.admin) {
+          badge = 'Admin';
+        } else if (user.isVerified) {
+          badge = 'Verified';
+        }
+
+        for (final doc in reportsQuery.docs) {
+          batch.update(doc.reference, {
+            'authorName': user.name,
+            'authorUsername': user.username,
+            'authorAvatarUrl': user.avatarUrl,
+            'authorBadge': badge,
+          });
+        }
+
+        for (final doc in commentsQuery.docs) {
+          batch.update(doc.reference, {
+            'authorName': user.name,
+            'authorUsername': user.username,
+            'authorAvatarUrl': user.avatarUrl,
+          });
+        }
+
+        await batch.commit();
+      }
+    } catch (e) {
+      print('Error syncing reports/comments on role change: $e');
+    }
   }
 
   Stream<List<CategoryItem>> watchCategories() {
