@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../domain/models/user_profile.dart';
 
-/// ProfileHeader — menampilkan avatar, nama, domisili, badge verifikasi,
-/// dan title gamifikasi pengguna. Ini adalah komponen kredibilitas utama.
+/// ProfileHeader — compact, no top bar (username sudah ada di AppBar).
 class ProfileHeader extends StatelessWidget {
   final UserProfile profile;
 
@@ -12,163 +11,163 @@ class ProfileHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      height: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF0F1E36), Color(0xFF1A3360), Color(0xFF2E5BFF)],
-          stops: [0.0, 0.6, 1.0],
-        ),
-      ),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          // bottom: 120 memberi ruang untuk ImpactStatsCard (tinggi ~110px) yang
-          // di-overlay di bagian bawah Stack oleh profile_screen
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 120),
-          child: Column(
-            children: [
-              // ── Top bar: Pengaturan ──────────────────────────────────────
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Profil Saya',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                      letterSpacing: 0.3,
+      color: Colors.white,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            // ── Top Bar (Username & Menu) ──────────────────────────────────
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const SizedBox(width: 48), // Menyeimbangkan icon menu di kanan agar username tetap center
+                Expanded(
+                  child: Text(
+                    '@${profile.username}',
+                    style: const TextStyle(
+                      color: Color(0xFF0F1E36),
+                      fontWeight: FontWeight.w800,
+                      fontSize: 17,
+                      letterSpacing: -0.2,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.menu_rounded, color: Color(0xFF0F1E36)),
+                  onPressed: () {},
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+
+            // ── Avatar center ──────────────────────────────────────────
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.grey.shade200,
+                      width: 1.5,
                     ),
                   ),
-                  IconButton(
-                    onPressed: () {},
-                    icon: const Icon(Icons.settings_outlined,
-                        color: Colors.white70),
-                    visualDensity: VisualDensity.compact,
+                  child: CircleAvatar(
+                    radius: 36,
+                    backgroundColor: Colors.grey.shade100,
+                    backgroundImage: NetworkImage(profile.avatarUrl),
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // ── Avatar + Identity ────────────────────────────────────────
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // Avatar dengan border premium
-                  Stack(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(3),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.white.withAlpha(204),
-                              Colors.white.withAlpha(77),
-                            ],
-                          ),
-                        ),
-                        child: CircleAvatar(
-                          radius: 44,
-                          backgroundColor: Colors.white24,
-                          backgroundImage: NetworkImage(profile.avatarUrl),
-                        ),
+                ),
+                if (profile.isVerifiedCitizen)
+                  Positioned(
+                    bottom: 2,
+                    right: 2,
+                    child: Container(
+                      padding: const EdgeInsets.all(2),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF00A550),
+                        shape: BoxShape.circle,
                       ),
-                      // Verified badge overlay
-                      if (profile.isVerifiedCitizen)
-                        Positioned(
-                          bottom: 2,
-                          right: 2,
-                          child: Container(
-                            padding: const EdgeInsets.all(3),
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF00A550),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.verified_rounded,
-                              color: Colors.white,
-                              size: 16,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(width: 16),
-
-                  // Nama, lokasi, badges
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Nama Pengguna
-                        Text(
-                          profile.displayName,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.2,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-
-                        // Lokasi Domisili
-                        Row(
-                          children: [
-                            const Icon(Icons.location_on_rounded,
-                                size: 14, color: Colors.white60),
-                            const SizedBox(width: 3),
-                            Flexible(
-                              child: Text(
-                                profile.domicile,
-                                style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 13,
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 10),
-
-                        // Badge row: Verified Citizen + Gamification Title
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 6,
-                          children: [
-                            if (profile.isVerifiedCitizen)
-                              _BadgeChip(
-                                label: 'Verified Citizen',
-                                icon: Icons.shield_rounded,
-                                color: const Color(0xFF00A550),
-                                bgColor: const Color(0x3300A550),
-                              ),
-                            _BadgeChip(
-                              label: profile.gamificationTitle,
-                              icon: Icons.military_tech_rounded,
-                              color: const Color(0xFFFFD54F),
-                              bgColor: const Color(0x33FFD54F),
-                            ),
-                          ],
-                        ),
-                      ],
+                      child: const Icon(
+                        Icons.verified_rounded,
+                        color: Colors.white,
+                        size: 12,
+                      ),
                     ),
                   ),
-                ],
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // ── Nama Lengkap ───────────────────────────────────────────
+            Text(
+              profile.displayName,
+              style: const TextStyle(
+                color: Color(0xFF0F1E36),
+                fontWeight: FontWeight.w800,
+                fontSize: 17,
+                letterSpacing: -0.3,
               ),
-            ],
-          ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 4),
+
+            // ── Lokasi ─────────────────────────────────────────────────
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.location_on_rounded,
+                    size: 12, color: Colors.grey.shade400),
+                const SizedBox(width: 2),
+                Text(
+                  profile.domicile,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey.shade500,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+
+            // ── Badge chips ────────────────────────────────────────────
+            Wrap(
+              alignment: WrapAlignment.center,
+              spacing: 6,
+              runSpacing: 4,
+              children: [
+                if (profile.isVerifiedCitizen)
+                  _BadgeChip(
+                    label: 'Verified Citizen',
+                    icon: Icons.shield_rounded,
+                    color: const Color(0xFF00A550),
+                    bgColor: const Color(0xFFE6F8EF),
+                  ),
+                _BadgeChip(
+                  label: profile.gamificationTitle,
+                  icon: Icons.military_tech_rounded,
+                  color: const Color(0xFFB45309),
+                  bgColor: const Color(0xFFFEF3C7),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+
+            // ── Edit Profil button ─────────────────────────────────────
+            SizedBox(
+              width: double.infinity,
+              height: 32,
+              child: OutlinedButton(
+                onPressed: () {},
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: Colors.grey.shade300, width: 1),
+                  foregroundColor: const Color(0xFF0F1E36),
+                  padding: EdgeInsets.zero,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                child: const Text('Edit Profil'),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-// ── Internal helper widget ────────────────────────────────────────────────────
+// ── Badge Chip ─────────────────────────────────────────────────────────────────
 class _BadgeChip extends StatelessWidget {
   final String label;
   final IconData icon;
@@ -185,24 +184,22 @@ class _BadgeChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: bgColor,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: color.withAlpha(102), width: 1),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: color),
-          const SizedBox(width: 5),
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
           Text(
             label,
             style: TextStyle(
               color: color,
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.w700,
-              letterSpacing: 0.2,
             ),
           ),
         ],

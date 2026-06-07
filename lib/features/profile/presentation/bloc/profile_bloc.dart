@@ -7,6 +7,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
   // ── Mock Data (siap diganti Repository pattern nanti) ─────────────────────
   static final UserProfile _mockProfile = UserProfile(
     id: 'user_001',
+    username: 'budisantoso_jkt',
     displayName: 'Budi Santoso',
     avatarUrl:
         'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300',
@@ -237,6 +238,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       // Update profile dengan poin baru
       final updatedProfile = UserProfile(
         id: currentState.profile.id,
+        username: currentState.profile.username,
         displayName: currentState.profile.displayName,
         avatarUrl: currentState.profile.avatarUrl,
         domicile: currentState.profile.domicile,

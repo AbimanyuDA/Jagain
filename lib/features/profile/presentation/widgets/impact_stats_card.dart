@@ -13,21 +13,16 @@ class ImpactStatsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16),
+      width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0F1E36).withAlpha(26),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-            spreadRadius: 0,
-          ),
-        ],
+        border: Border(
+          top: BorderSide(color: Colors.grey.shade100, width: 1),
+          bottom: BorderSide(color: Colors.grey.shade100, width: 1),
+        ),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         child: Row(
           children: [
             _StatColumn(
@@ -35,7 +30,7 @@ class ImpactStatsCard extends StatelessWidget {
               label: 'Civic Points',
               icon: Icons.stars_rounded,
               iconColor: const Color(0xFFFFB300),
-              valueColor: ProfileColors.navyDark,
+              valueColor: const Color(0xFF0F1E36),
               isHighlighted: true,
             ),
             _Divider(),
@@ -43,16 +38,16 @@ class ImpactStatsCard extends StatelessWidget {
               value: profile.reportsSolved.toString(),
               label: 'Laporan Solved',
               icon: Icons.check_circle_rounded,
-              iconColor: ProfileColors.statusSolved,
-              valueColor: ProfileColors.navyDark,
+              iconColor: const Color(0xFF00A550),
+              valueColor: const Color(0xFF0F1E36),
             ),
             _Divider(),
             _StatColumn(
               value: profile.upvotesGiven.toString(),
               label: 'Upvotes Given',
               icon: Icons.thumb_up_rounded,
-              iconColor: ProfileColors.primary,
-              valueColor: ProfileColors.navyDark,
+              iconColor: const Color(0xFF2E5BFF),
+              valueColor: const Color(0xFF0F1E36),
             ),
           ],
         ),
@@ -87,15 +82,15 @@ class _StatColumn extends StatelessWidget {
         children: [
           // Icon bubble
           Container(
-            width: 44,
-            height: 44,
+            width: 36,
+            height: 36,
             decoration: BoxDecoration(
               color: iconColor.withAlpha(26),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: iconColor, size: 22),
+            child: Icon(icon, color: iconColor, size: 18),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 6),
 
           // Value
           Text(
