@@ -126,32 +126,44 @@ class _ProfileViewState extends State<_ProfileView>
             body: SafeArea(
               top: true,
               bottom: false,
-              child: NestedScrollView(
-                headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                  SliverPersistentHeader(
-                    pinned: true,
-                    delegate: _ProfileHeaderDelegate(
-                      profile: profile,
-                      isOwnProfile: isOwnProfile,
-                      tabController: _tabController,
-                      tabs: _tabs,
-                    ),
-                  ),
-                ],
-
-                body: Container(
-                  color: const Color(0xFFF8F9FA),
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      MyReportsTab(reports: profile.myReports),
-                      SupportedReportsTab(reports: profile.supportedReports),
-                      AchievementsTab(
-                        badges: profile.badges,
-                        availablePoints: profile.availablePointsForRedeem,
+              child: RefreshIndicator(
+                notificationPredicate: (notification) =>
+                    notification.depth == 0 || notification.depth == 2,
+                displacement: 80.0,
+                onRefresh: () async {
+                  final profileBloc = context.read<ProfileBloc>();
+                  profileBloc.add(LoadProfile(username: widget.targetUsername));
+                  await profileBloc.stream.firstWhere(
+                    (state) => state is ProfileLoaded || state is ProfileError,
+                  );
+                },
+                child: NestedScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                    SliverPersistentHeader(
+                      pinned: true,
+                      delegate: _ProfileHeaderDelegate(
+                        profile: profile,
                         isOwnProfile: isOwnProfile,
+                        tabController: _tabController,
+                        tabs: _tabs,
                       ),
-                    ],
+                    ),
+                  ],
+                  body: Container(
+                    color: const Color(0xFFF8F9FA),
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        MyReportsTab(reports: profile.myReports),
+                        SupportedReportsTab(reports: profile.supportedReports),
+                        AchievementsTab(
+                          badges: profile.badges,
+                          availablePoints: profile.availablePointsForRedeem,
+                          isOwnProfile: isOwnProfile,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
