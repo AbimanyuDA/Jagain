@@ -233,6 +233,150 @@ class _ProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
     required this.tabs,
   });
 
+  void _showAccountSwitcher(BuildContext context, String currentUsername) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 10),
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+              const SizedBox(height: 20),
+              
+              // Akun Budi
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundImage: NetworkImage(
+                    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300',
+                  ),
+                ),
+                title: const Text(
+                  'budisantoso_jkt',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0F1E36),
+                  ),
+                ),
+                trailing: currentUsername == 'budisantoso_jkt'
+                    ? const Icon(Icons.check_circle_rounded, color: Color(0xFF00A550))
+                    : null,
+                onTap: () {
+                  Navigator.pop(context);
+                  if (currentUsername != 'budisantoso_jkt') {
+                    context.read<ProfileBloc>().add(const LoadProfile(username: 'budisantoso_jkt'));
+                  }
+                },
+              ),
+              
+              // Akun Aditya
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundImage: NetworkImage(
+                    'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
+                  ),
+                ),
+                title: const Text(
+                  'aditya_wijaya',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0F1E36),
+                  ),
+                ),
+                trailing: currentUsername == 'aditya_wijaya'
+                    ? const Icon(Icons.check_circle_rounded, color: Color(0xFF00A550))
+                    : null,
+                onTap: () {
+                  Navigator.pop(context);
+                  if (currentUsername != 'aditya_wijaya') {
+                    context.read<ProfileBloc>().add(const LoadProfile(username: 'aditya_wijaya'));
+                  }
+                },
+              ),
+
+              // Akun Siti
+              ListTile(
+                leading: const CircleAvatar(
+                  backgroundImage: NetworkImage(
+                    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
+                  ),
+                ),
+                title: const Text(
+                  'sitiaminah',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF0F1E36),
+                  ),
+                ),
+                trailing: currentUsername == 'sitiaminah'
+                    ? const Icon(Icons.check_circle_rounded, color: Color(0xFF00A550))
+                    : null,
+                onTap: () {
+                  Navigator.pop(context);
+                  if (currentUsername != 'sitiaminah') {
+                    context.read<ProfileBloc>().add(const LoadProfile(username: 'sitiaminah'));
+                  }
+                },
+              ),
+              
+              const Divider(),
+              
+              // Tambah Akun
+              ListTile(
+                leading: Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.add_rounded, color: Color(0xFF0F1E36)),
+                ),
+                title: const Text(
+                  'Tambah Akun Baru',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Color(0xFF0F1E36),
+                  ),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      title: const Text('Tambah Akun Baru'),
+                      content: const Text('Fitur integrasi multi-akun akan tersedia pada versi rilis berikutnya.'),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('OK', style: TextStyle(color: Color(0xFF0F1E36))),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 10),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(
       BuildContext context, double shrinkOffset, bool overlapsContent) {
@@ -274,7 +418,16 @@ class _ProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
                   children: [
-                    if (!isOwnProfile) ...[
+                    if (isOwnProfile) ...[
+                      IconButton(
+                        icon: const Icon(Icons.add,
+                            color: Color(0xFF0F1E36)),
+                        onPressed: () => context.push('/create-report'),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                      const Spacer(),
+                    ] else ...[
                       IconButton(
                         icon: const Icon(Icons.arrow_back_ios_new_rounded,
                             color: Color(0xFF0F1E36), size: 20),
@@ -284,22 +437,57 @@ class _ProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
                       ),
                       const SizedBox(width: 12),
                     ],
-                    Text(
-                      profile.username, // Username tanpa @ ala Instagram
-                      style: const TextStyle(
-                        color: Color(0xFF0F1E36),
-                        fontWeight: FontWeight.w700, // Tipis/clean ala IG (w700 dibanding w800)
-                        fontSize: 18,
-                        letterSpacing: -0.4,
+                    if (isOwnProfile)
+                      GestureDetector(
+                        onTap: () => _showAccountSwitcher(context, profile.username),
+                        behavior: HitTestBehavior.opaque,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              profile.username,
+                              style: const TextStyle(
+                                color: Color(0xFF0F1E36),
+                                fontWeight: FontWeight.w700,
+                                fontSize: 16,
+                                letterSpacing: -0.4,
+                              ),
+                            ),
+                            if (profile.isVerifiedCitizen) ...[
+                              const SizedBox(width: 4),
+                              const Icon(
+                                Icons.verified_rounded,
+                                color: Color(0xFF2E5BFF),
+                                size: 14,
+                              ),
+                            ],
+                            const SizedBox(width: 2),
+                            const Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              color: Color(0xFF0F1E36),
+                              size: 18,
+                            ),
+                          ],
+                        ),
+                      )
+                    else ...[
+                      Text(
+                        profile.username, // Username tanpa @ ala Instagram
+                        style: const TextStyle(
+                          color: Color(0xFF0F1E36),
+                          fontWeight: FontWeight.w700, // Tipis/clean ala IG (w700 dibanding w800)
+                          fontSize: 18,
+                          letterSpacing: -0.4,
+                        ),
                       ),
-                    ),
-                    if (profile.isVerifiedCitizen) ...[
-                      const SizedBox(width: 4),
-                      const Icon(
-                        Icons.verified_rounded,
-                        color: Color(0xFF2E5BFF), // Warna biru verifikasi IG
-                        size: 15,
-                      ),
+                      if (profile.isVerifiedCitizen) ...[
+                        const SizedBox(width: 4),
+                        const Icon(
+                          Icons.verified_rounded,
+                          color: Color(0xFF2E5BFF), // Warna biru verifikasi IG
+                          size: 15,
+                        ),
+                      ],
                     ],
                     const Spacer(),
                     IconButton(
