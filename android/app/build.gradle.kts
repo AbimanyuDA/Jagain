@@ -1,8 +1,24 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("kotlin-android")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+// Read secrets from the Flutter project's .env (single source of truth for all
+// environment values, gitignored) so native config doesn't need its own copy.
+val dotenv = Properties()
+val dotenvFile = rootProject.file("../.env")
+if (dotenvFile.exists()) {
+    dotenvFile.forEachLine { line ->
+        val trimmed = line.trim()
+        if (trimmed.isNotEmpty() && !trimmed.startsWith("#") && trimmed.contains("=")) {
+            val (key, value) = trimmed.split("=", limit = 2)
+            dotenv.setProperty(key.trim(), value.trim())
+        }
+    }
 }
 
 android {
@@ -28,6 +44,9 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        manifestPlaceholders["googleMapsApiKey"] =
+            dotenv.getProperty("GOOGLE_MAPS_API_KEY", "")
     }
 
     buildTypes {

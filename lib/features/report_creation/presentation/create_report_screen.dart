@@ -1,9 +1,12 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../auth/domain/user_model.dart';
@@ -15,6 +18,7 @@ import 'bloc/create_report_state.dart';
 
 const _categories = ['JALAN', 'PJU', 'DRAINASE', 'TROTOAR', 'POHON', 'LAINNYA'];
 const _urgencyLevels = ['NORMAL', 'URGENT'];
+const _defaultLocation = LatLng(-6.2088, 106.8456);
 
 class CreateReportScreen extends StatelessWidget {
   const CreateReportScreen({super.key});
@@ -46,8 +50,16 @@ class _CreateReportViewState extends State<_CreateReportView> {
   String _category = _categories.first;
   String _urgency = _urgencyLevels.first;
 
-  Position? _position;
-  bool _isFetchingLocation = false;
+  LatLng? _selectedLocation;
+  String? _confirmedAddress;
+  bool _isLocating = false;
+  GoogleMapController? _mapController;
+
+  @override
+  void initState() {
+    super.initState();
+    _getCurrentLocation();
+  }
 
   @override
   void dispose() {
@@ -100,23 +112,23 @@ class _CreateReportViewState extends State<_CreateReportView> {
     setState(() => _images.removeAt(index));
   }
 
-  Future<void> _detectLocation() async {
-    setState(() => _isFetchingLocation = true);
+  Future<void> _getCurrentLocation() async {
+    setState(() => _isLocating = true);
     try {
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-      if (permission == LocationPermission.deniedForever ||
-          permission == LocationPermission.denied) {
-        throw Exception(
-          'Izin lokasi ditolak. Aktifkan izin lokasi di pengaturan.',
-        );
-      }
-
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         throw Exception('Layanan lokasi (GPS) tidak aktif.');
+      }
+
+      var permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          throw Exception('Izin lokasi ditolak.');
+        }
+      }
+      if (permission == LocationPermission.deniedForever) {
+        throw Exception('Izin lokasi ditolak secara permanen.');
       }
 
       final position = await Geolocator.getCurrentPosition(
@@ -124,16 +136,66 @@ class _CreateReportViewState extends State<_CreateReportView> {
           accuracy: LocationAccuracy.high,
         ),
       );
-      setState(() => _position = position);
+
+      final latLng = LatLng(position.latitude, position.longitude);
+      setState(() {
+        _selectedLocation = latLng;
+        _isLocating = false;
+      });
+
+      _mapController?.animateCamera(
+        CameraUpdate.newCameraPosition(CameraPosition(target: latLng, zoom: 15)),
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Gagal mendapatkan lokasi: $e')));
       }
-    } finally {
-      if (mounted) setState(() => _isFetchingLocation = false);
+      setState(() {
+        _selectedLocation = _defaultLocation;
+        _isLocating = false;
+      });
     }
+  }
+
+  Future<String> _reverseGeocode(double lat, double lng) async {
+    final apiKey = dotenv.env['GOOGLE_MAPS_API_KEY'] ?? '';
+    final client = HttpClient();
+    try {
+      final uri = Uri.parse(
+        'https://maps.googleapis.com/maps/api/geocode/json?latlng=$lat,$lng&key=$apiKey',
+      );
+      final request = await client.getUrl(uri);
+      final response = await request.close();
+      if (response.statusCode == 200) {
+        final responseBody = await response.transform(utf8.decoder).join();
+        final data = json.decode(responseBody);
+        if (data['status'] == 'OK' &&
+            data['results'] != null &&
+            data['results'].isNotEmpty) {
+          return data['results'][0]['formatted_address'] as String;
+        }
+      }
+    } catch (e) {
+      debugPrint('Error performing reverse geocoding: $e');
+    } finally {
+      client.close();
+    }
+    return 'Gagal mendapatkan alamat.';
+  }
+
+  Future<void> _confirmLocation() async {
+    if (_selectedLocation == null) return;
+    setState(() => _isLocating = true);
+    final address = await _reverseGeocode(
+      _selectedLocation!.latitude,
+      _selectedLocation!.longitude,
+    );
+    setState(() {
+      _confirmedAddress = address;
+      _isLocating = false;
+    });
   }
 
   void _submit(UserModel author) {
@@ -146,7 +208,7 @@ class _CreateReportViewState extends State<_CreateReportView> {
       return;
     }
 
-    if (_position == null) {
+    if (_selectedLocation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Tentukan lokasi kerusakan terlebih dahulu.'),
@@ -163,8 +225,8 @@ class _CreateReportViewState extends State<_CreateReportView> {
         category: _category,
         urgency: _urgency,
         images: _images,
-        latitude: _position!.latitude,
-        longitude: _position!.longitude,
+        latitude: _selectedLocation!.latitude,
+        longitude: _selectedLocation!.longitude,
         wilayah: _wilayahController.text.trim(),
       ),
     );
@@ -397,31 +459,97 @@ class _CreateReportViewState extends State<_CreateReportView> {
   }
 
   Widget _buildLocationPicker() {
-    return ListTile(
-      tileColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        side: const BorderSide(color: Colors.grey),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      leading: const Icon(Icons.location_on, color: Colors.red),
-      title: Text(
-        _position == null
-            ? 'Pilih Lokasi Kerusakan'
-            : 'Lokasi: ${_position!.latitude.toStringAsFixed(5)}, ${_position!.longitude.toStringAsFixed(5)}',
-      ),
-      subtitle: Text(
-        _position == null
-            ? 'Tekan untuk mengambil koordinat GPS Anda saat ini'
-            : 'Koordinat GPS berhasil diambil',
-      ),
-      trailing: _isFetchingLocation
-          ? const SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            )
-          : const Icon(Icons.my_location),
-      onTap: _isFetchingLocation ? null : _detectLocation,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Lokasi Kejadian',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          height: 250,
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey.shade300),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: _selectedLocation == null
+              ? const Center(child: CircularProgressIndicator())
+              : Stack(
+                  children: [
+                    GoogleMap(
+                      initialCameraPosition: CameraPosition(
+                        target: _selectedLocation!,
+                        zoom: 15,
+                      ),
+                      onMapCreated: (controller) => _mapController = controller,
+                      markers: {
+                        Marker(
+                          markerId: const MarkerId('pinpoint'),
+                          position: _selectedLocation!,
+                          draggable: true,
+                          onDragEnd: (newPosition) {
+                            setState(() {
+                              _selectedLocation = newPosition;
+                              _confirmedAddress = null;
+                            });
+                          },
+                        ),
+                      },
+                      onTap: (latLng) {
+                        setState(() {
+                          _selectedLocation = latLng;
+                          _confirmedAddress = null;
+                        });
+                      },
+                    ),
+                    Positioned(
+                      bottom: 16,
+                      left: 16,
+                      right: 16,
+                      child: ElevatedButton.icon(
+                        onPressed: _isLocating ? null : _confirmLocation,
+                        icon: const Icon(Icons.gps_fixed, size: 18),
+                        label: const Text('Konfirmasi Lokasi'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey.shade200,
+                          foregroundColor: const Color(0xFF1B3564),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+        if (_confirmedAddress != null) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              border: Border.all(color: Colors.blue.shade100),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.location_on, color: Color(0xFF1B3564)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    _confirmedAddress!,
+                    style: const TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
