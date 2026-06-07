@@ -3,7 +3,8 @@
 
 class UserProfile {
   final String id;
-  final String displayName;
+  final String username;       // e.g. 'abimanyudans' (no spaces)
+  final String displayName;   // e.g. 'Budi Santoso'
   final String avatarUrl;
   final String domicile;
   final bool isVerifiedCitizen; // NIK verified
@@ -19,6 +20,7 @@ class UserProfile {
 
   const UserProfile({
     required this.id,
+    required this.username,
     required this.displayName,
     required this.avatarUrl,
     required this.domicile,

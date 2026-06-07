@@ -22,29 +22,32 @@ class _FeedScreenState extends State<FeedScreen> {
     return BlocProvider(
       create: (context) => FeedBloc()..add(LoadFeed()),
       child: Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            icon: const Icon(Icons.menu, color: Color(0xFF0F1E36)),
-            onPressed: () {},
-          ),
-          title: const Text(
-            'JAGAIN',
-            style: TextStyle(
-              color: Color(0xFF0F1E36), // Match mockup bold dark logo style
-              fontWeight: FontWeight.w900,
-              fontSize: 22,
-              letterSpacing: 0.5,
-            ),
-          ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.search, color: Color(0xFF0F1E36)),
-              onPressed: () {},
-            ),
-          ],
-          backgroundColor: Colors.white,
-          elevation: 0.5,
-        ),
+        appBar: _currentIndex == 3
+            ? null
+            : AppBar(
+                leading: IconButton(
+                  icon: const Icon(Icons.menu, color: Color(0xFF0F1E36)),
+                  onPressed: () {},
+                ),
+                automaticallyImplyLeading: false,
+                title: const Text(
+                  'JAGAIN',
+                  style: TextStyle(
+                    color: Color(0xFF0F1E36),
+                    fontWeight: FontWeight.w900,
+                    fontSize: 22,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.search, color: Color(0xFF0F1E36)),
+                    onPressed: () {},
+                  ),
+                ],
+                backgroundColor: Colors.white,
+                elevation: 0.5,
+              ),
         body: IndexedStack(
           index: _currentIndex,
           children: [

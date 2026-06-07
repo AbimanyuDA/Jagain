@@ -40,9 +40,9 @@ class _ProfileViewState extends State<_ProfileView>
   late final TabController _tabController;
 
   static const List<_TabItem> _tabs = [
-    _TabItem(label: 'Laporanku', icon: Icons.campaign_rounded),
-    _TabItem(label: 'Jejak Dukungan', icon: Icons.favorite_rounded),
-    _TabItem(label: 'Pencapaian', icon: Icons.military_tech_rounded),
+    _TabItem(label: 'Laporanku', icon: Icons.article_outlined),
+    _TabItem(label: 'Dukungan', icon: Icons.favorite_outline_rounded),
+    _TabItem(label: 'Pencapaian', icon: Icons.emoji_events_outlined),
   ];
 
   @override
@@ -109,83 +109,54 @@ class _ProfileViewState extends State<_ProfileView>
           final profile = state.profile;
 
           return Scaffold(
-            backgroundColor: const Color(0xFFF8F9FA),
-            body: NestedScrollView(
-              headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                // ── SliverAppBar: Header profil + Stats Card ─────────────
-                SliverAppBar(
-                  expandedHeight: 380,
-                  pinned: true,
-                  floating: false,
-                  backgroundColor: const Color(0xFF0F1E36),
-                  elevation: 0,
-                  // Title yang muncul saat header ter-collapse
-                  title: AnimatedOpacity(
-                    opacity: innerBoxIsScrolled ? 1.0 : 0.0,
-                    duration: const Duration(milliseconds: 200),
-                    child: Row(
+            backgroundColor: Colors.white,
+            body: SafeArea(
+              top: true,
+              bottom: false,
+              child: NestedScrollView(
+                headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                  // ── Header: ProfileHeader + ImpactStatsCard dalam Column ──
+                  // Menggunakan SliverToBoxAdapter jauh lebih aman daripada
+                  // SliverAppBar+FlexibleSpaceBar untuk konten yang fixed-height.
+                  SliverToBoxAdapter(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        CircleAvatar(
-                          radius: 16,
-                          backgroundImage: NetworkImage(profile.avatarUrl),
-                        ),
-                        const SizedBox(width: 10),
-                        Text(
-                          profile.displayName,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
+                        // Gradient hero section
+                        ProfileHeader(profile: profile),
+                        // Stats card langsung di bawah gradient — no gap
+                        ImpactStatsCard(profile: profile),
                       ],
                     ),
                   ),
-                  flexibleSpace: FlexibleSpaceBar(
-                    // Gunakan ClampingScrollPhysics agar tidak ada efek parallax
-                    collapseMode: CollapseMode.pin,
-                    background: Stack(
-                      children: [
-                        // ── Layer 1: Gradient header mengisi full area ──
-                        Positioned.fill(
-                          child: ProfileHeader(profile: profile),
-                        ),
-                        // ── Layer 2: Stats card anchor di bagian bawah ──
-                        // Margin bottom memberi ruang agar card tidak terpotong
-                        Positioned(
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          child: ImpactStatsCard(profile: profile),
-                        ),
-                      ],
+  
+                  // ── Sticky Tab Bar ────────────────────────────────────────
+                  SliverPersistentHeader(
+                    pinned: true,
+                    delegate: _StickyTabBarDelegate(
+                      child: _ProfileTabBar(
+                        controller: _tabController,
+                        tabs: _tabs,
+                      ),
                     ),
-                  ),
-                ),
-
-                // ── SliverPersistentHeader: Sticky Tab Bar ────────────────
-                SliverPersistentHeader(
-                  pinned: true,
-                  delegate: _StickyTabBarDelegate(
-                    child: _ProfileTabBar(
-                      controller: _tabController,
-                      tabs: _tabs,
-                    ),
-                  ),
-                ),
-              ],
-
-              // ── Tab Content ───────────────────────────────────────────────
-              body: TabBarView(
-                controller: _tabController,
-                children: [
-                  MyReportsTab(reports: profile.myReports),
-                  SupportedReportsTab(reports: profile.supportedReports),
-                  AchievementsTab(
-                    badges: profile.badges,
-                    availablePoints: profile.availablePointsForRedeem,
                   ),
                 ],
+  
+                // ── Tab Content ───────────────────────────────────────────────
+                body: Container(
+                  color: const Color(0xFFF8F9FA),
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      MyReportsTab(reports: profile.myReports),
+                      SupportedReportsTab(reports: profile.supportedReports),
+                      AchievementsTab(
+                        badges: profile.badges,
+                        availablePoints: profile.availablePointsForRedeem,
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           );
@@ -232,24 +203,27 @@ class _ProfileTabBar extends StatelessWidget {
             labelStyle: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w700,
-              letterSpacing: 0.2,
+              letterSpacing: 0.1,
             ),
             unselectedLabelStyle: const TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
+            // Icon + text horizontal — label pendek agar tidak overflow
             tabs: tabs
-                .map((t) => Tab(
-                      height: 44,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(t.icon, size: 16),
-                          const SizedBox(width: 6),
-                          Text(t.label),
-                        ],
-                      ),
-                    ))
+                .map(
+                  (t) => Tab(
+                    height: 44,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(t.icon, size: 15),
+                        const SizedBox(width: 5),
+                        Text(t.label),
+                      ],
+                    ),
+                  ),
+                )
                 .toList(),
           ),
           Divider(height: 1, color: Colors.grey.shade200),
