@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'bloc/feed_bloc.dart';
 import 'bloc/feed_event.dart';
 import 'bloc/feed_state.dart';
 import 'widgets/post_card.dart';
+import '../../profile/presentation/profile_screen.dart';
 
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
@@ -87,15 +89,15 @@ class _FeedScreenState extends State<FeedScreen> {
             // Tab 3: Stats Placeholder (Developer A / C)
             const Center(child: Text('Halaman Statistik & Grafik Laporan')),
             
-            // Tab 4: Profile Placeholder (Developer A)
-            const Center(child: Text('Halaman Profil Pengguna')),
+            // Tab 4: Profile Screen (Developer A)
+            const ProfileScreen(),
           ],
         ),
         
         // Floating Action Button for reporting (Developer C entrypoint)
         floatingActionButton: FloatingActionButton(
           onPressed: () {
-            // TODO: Route to Create Report Screen
+            context.push('/create-report');
           },
           backgroundColor: const Color(0xFF0F1E36), // Match dark blue button in mockup
           shape: RoundedRectangleBorder(

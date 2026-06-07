@@ -165,13 +165,14 @@ class PostCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Upvote & Downvote Capsule
+                // Upvote & Downvote Capsule — fixed width, no flex needed
                 Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF0F4FF), // Light bluish background
+                    color: const Color(0xFFF0F4FF),
                     borderRadius: BorderRadius.circular(24),
                   ),
                   child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
                         icon: Icon(
@@ -207,48 +208,60 @@ class PostCard extends StatelessWidget {
                   ),
                 ),
 
-                // Updates Indicator
-                InkWell(
-                  onTap: () {},
-                  borderRadius: BorderRadius.circular(8),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.build_circle_outlined, size: 18, color: Colors.black54),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${post.updatesCount} Updates',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Colors.black87,
-                            fontWeight: FontWeight.w500,
+                // Updates Indicator — Flexible prevents overflow
+                Flexible(
+                  child: InkWell(
+                    onTap: () {},
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.build_circle_outlined, size: 18, color: Colors.black54),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              '${post.updatesCount} Updates',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: Colors.black87,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
 
-                // Replies Indicator
-                InkWell(
-                  onTap: () {},
-                  borderRadius: BorderRadius.circular(8),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.chat_bubble_outline, size: 18, color: Colors.black54),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${post.repliesCount} Replies',
-                          style: const TextStyle(
-                            fontSize: 13,
-                            color: Colors.black87,
-                            fontWeight: FontWeight.w500,
+                // Replies Indicator — Flexible prevents overflow
+                Flexible(
+                  child: InkWell(
+                    onTap: () {},
+                    borderRadius: BorderRadius.circular(8),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.chat_bubble_outline, size: 18, color: Colors.black54),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              '${post.repliesCount} Replies',
+                              style: const TextStyle(
+                                fontSize: 13,
+                                color: Colors.black87,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
