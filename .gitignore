@@ -47,3 +47,9 @@ app.*.map.json
 # Firebase
 google-services.json
 .env
+
+# Diagrams
+class_diagram.svg
+
+# Claude Code local session state
+.claude/
