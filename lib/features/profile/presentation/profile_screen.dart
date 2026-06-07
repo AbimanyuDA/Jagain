@@ -1,8 +1,12 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/utils/session_manager.dart';
 import '../domain/models/user_profile.dart';
+import '../../auth/presentation/bloc/auth_bloc.dart';
+import '../../auth/presentation/bloc/auth_event.dart';
 import 'bloc/profile_bloc.dart';
 import 'bloc/profile_event.dart';
 import 'bloc/profile_state.dart';
@@ -282,22 +286,57 @@ class _ProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
                       ),
                       const SizedBox(width: 12),
                     ],
-                    Text(
-                      profile.username,
-                      style: TextStyle(
-                        color: const Color(0xFF0F1E36),
-                        fontWeight: FontWeight.w700,
-                        fontSize: isOwnProfile ? 16 : 18,
-                        letterSpacing: -0.4,
+                    if (isOwnProfile)
+                      GestureDetector(
+                        onTap: () => _showAccountSwitcher(context, profile),
+                        behavior: HitTestBehavior.opaque,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              profile.username,
+                              style: const TextStyle(
+                                color: Color(0xFF0F1E36),
+                                fontWeight: FontWeight.w700,
+                                fontSize: 16,
+                                letterSpacing: -0.4,
+                              ),
+                            ),
+                            if (profile.isVerifiedCitizen) ...[
+                              const SizedBox(width: 4),
+                              const Icon(
+                                Icons.verified_rounded,
+                                color: Color(0xFF2E5BFF),
+                                size: 14,
+                              ),
+                            ],
+                            const SizedBox(width: 2),
+                            const Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              color: Color(0xFF0F1E36),
+                              size: 18,
+                            ),
+                          ],
+                        ),
+                      )
+                    else ...[
+                      Text(
+                        profile.username,
+                        style: const TextStyle(
+                          color: Color(0xFF0F1E36),
+                          fontWeight: FontWeight.w700,
+                          fontSize: 18,
+                          letterSpacing: -0.4,
+                        ),
                       ),
-                    ),
-                    if (profile.isVerifiedCitizen) ...[
-                      const SizedBox(width: 4),
-                      Icon(
-                        Icons.verified_rounded,
-                        color: const Color(0xFF2E5BFF),
-                        size: isOwnProfile ? 14 : 15,
-                      ),
+                      if (profile.isVerifiedCitizen) ...[
+                        const SizedBox(width: 4),
+                        const Icon(
+                          Icons.verified_rounded,
+                          color: Color(0xFF2E5BFF),
+                          size: 15,
+                        ),
+                      ],
                     ],
                     const Spacer(),
                     IconButton(
@@ -334,6 +373,143 @@ class _ProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
           ),
         ],
       ),
+    );
+  }
+
+  void _showAccountSwitcher(BuildContext context, UserProfile profile) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: FutureBuilder<List<Map<String, dynamic>>>(
+            future: SessionManager.getSessions(),
+            builder: (futureContext, snapshot) {
+              final allSessions = snapshot.data ?? [];
+              final otherSessions = allSessions
+                  .where((s) => s['username'] != profile.username)
+                  .toList();
+
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const SizedBox(height: 10),
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  
+                  // Akun Aktif (Real User dari backend)
+                  ListTile(
+                    leading: CircleAvatar(
+                      backgroundImage: profile.avatarUrl.isNotEmpty
+                          ? NetworkImage(profile.avatarUrl)
+                          : null,
+                      backgroundColor: Colors.grey.shade200,
+                      child: profile.avatarUrl.isEmpty
+                          ? const Icon(Icons.person, color: Colors.grey)
+                          : null,
+                    ),
+                    title: Text(
+                      profile.username,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF0F1E36),
+                      ),
+                    ),
+                    trailing: const Icon(Icons.check_circle_rounded, color: Color(0xFF00A550)),
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                    },
+                  ),
+                  
+                  if (snapshot.connectionState == ConnectionState.waiting)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 20),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else
+                    ...otherSessions.map((session) {
+                      final username = session['username'] ?? 'warga';
+                      final name = session['name'] ?? '';
+                      final avatarUrl = session['avatarUrl'] ?? '';
+                      
+                      return ListTile(
+                        leading: CircleAvatar(
+                          backgroundImage: avatarUrl.isNotEmpty
+                              ? NetworkImage(avatarUrl)
+                              : null,
+                          backgroundColor: Colors.grey.shade200,
+                          child: avatarUrl.isEmpty
+                              ? Text(
+                                  name.isNotEmpty ? name[0].toUpperCase() : '?',
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black54,
+                                  ),
+                                )
+                              : null,
+                        ),
+                        title: Text(
+                          username,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF0F1E36),
+                          ),
+                        ),
+                        subtitle: Text(
+                          name,
+                          style: const TextStyle(color: Colors.grey, fontSize: 12),
+                        ),
+                        onTap: () {
+                          Navigator.pop(sheetContext);
+                          context.read<AuthBloc>().add(AuthSwitchAccountRequested(session['uid'] ?? ''));
+                          context.read<ProfileBloc>().add(LoadProfile(username: username));
+                        },
+                      );
+                    }).toList(),
+                  
+                  const Divider(),
+                  
+                  // Tambah Akun
+                  ListTile(
+                    leading: Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.grey.shade300),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(Icons.add_rounded, color: Color(0xFF0F1E36)),
+                    ),
+                    title: const Text(
+                      'Tambah Akun Jagain',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF0F1E36),
+                      ),
+                    ),
+                    onTap: () {
+                      Navigator.pop(sheetContext);
+                      context.push('/login?adding=true');
+                    },
+                  ),
+                  const SizedBox(height: 10),
+                ],
+              );
+            },
+          ),
+        );
+      },
     );
   }
 

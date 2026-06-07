@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 import '../../data/auth_repository.dart';
+import '../../../../core/utils/session_manager.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _repository;
@@ -15,6 +16,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthLoginRequested>(_onAuthLoginRequested);
     on<AuthRegisterRequested>(_onAuthRegisterRequested);
     on<AuthLogoutRequested>(_onAuthLogoutRequested);
+    on<AuthUserRefreshed>(_onAuthUserRefreshed);
+    on<AuthSwitchAccountRequested>(_onAuthSwitchAccountRequested);
   }
 
   void _onAuthCheckRequested(
@@ -27,6 +30,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       _repository.authStateChanges,
       onData: (user) {
         if (user == null) return AuthUnauthenticated();
+        SessionManager.addSession(user);
         return AuthAuthenticated(user: user);
       },
       onError: (_, _) => AuthUnauthenticated(),
@@ -43,6 +47,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         email: event.email,
         password: event.password,
       );
+      await SessionManager.addSession(user, email: event.email, password: event.password);
       emit(AuthAuthenticated(user: user));
     } catch (e) {
       emit(AuthError(e.toString()));
@@ -65,6 +70,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         address: event.address,
         phoneNumber: event.phoneNumber,
       );
+      await SessionManager.addSession(user, email: event.email, password: event.password);
       emit(AuthAuthenticated(user: user));
     } catch (e) {
       emit(AuthError(e.toString()));
@@ -81,6 +87,34 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(AuthUnauthenticated());
     } catch (e) {
       emit(AuthError(e.toString()));
+    }
+  }
+
+  void _onAuthUserRefreshed(AuthUserRefreshed event, Emitter<AuthState> emit) async {
+    await SessionManager.addSession(event.user);
+    emit(AuthAuthenticated(user: event.user));
+  }
+
+  void _onAuthSwitchAccountRequested(
+    AuthSwitchAccountRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    try {
+      final sessions = await SessionManager.getSessions();
+      final session = sessions.firstWhere((s) => s['uid'] == event.uid);
+      final email = session['email'];
+      final password = session['password'];
+      
+      if (email != null && password != null) {
+        final user = await _repository.signIn(email: email, password: password);
+        await SessionManager.addSession(user, email: email, password: password);
+        emit(AuthAuthenticated(user: user));
+      } else {
+        emit(AuthError('Kredensial sesi tidak ditemukan untuk login otomatis.'));
+      }
+    } catch (e) {
+      emit(AuthError('Gagal berganti akun: ${e.toString()}'));
     }
   }
 
