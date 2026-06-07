@@ -67,21 +67,17 @@ class AdminRepository {
   }
 
   Future<void> _syncUserReportsAndComments(String uid) async {
-    try {
-      final userSnap = await _users.doc(uid).get();
-      if (!userSnap.exists || userSnap.data() == null) return;
-      final user = UserModel.fromMap(uid, userSnap.data()!);
+    final userSnap = await _users.doc(uid).get();
+    if (!userSnap.exists || userSnap.data() == null) return;
+    final user = UserModel.fromMap(uid, userSnap.data()!);
 
+    // 1. Sync reports
+    try {
       final reportsQuery = await _reports
           .where('authorId', isEqualTo: uid)
           .get();
 
-      final commentsQuery = await _firestore
-          .collectionGroup('comments')
-          .where('authorId', isEqualTo: uid)
-          .get();
-
-      if (reportsQuery.docs.isNotEmpty || commentsQuery.docs.isNotEmpty) {
+      if (reportsQuery.docs.isNotEmpty) {
         final batch = _firestore.batch();
 
         String badge = 'Citizen Reporter';
@@ -102,6 +98,22 @@ class AdminRepository {
           });
         }
 
+        await batch.commit();
+      }
+    } catch (e) {
+      print('Error syncing reports on role change: $e');
+    }
+
+    // 2. Sync comments
+    try {
+      final commentsQuery = await _firestore
+          .collectionGroup('comments')
+          .where('authorId', isEqualTo: uid)
+          .get();
+
+      if (commentsQuery.docs.isNotEmpty) {
+        final batch = _firestore.batch();
+
         for (final doc in commentsQuery.docs) {
           batch.update(doc.reference, {
             'authorName': user.name,
@@ -113,7 +125,7 @@ class AdminRepository {
         await batch.commit();
       }
     } catch (e) {
-      print('Error syncing reports/comments on role change: $e');
+      print('Error syncing comments on role change: $e');
     }
   }
 

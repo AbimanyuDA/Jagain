@@ -7,6 +7,7 @@ import '../../../core/utils/session_manager.dart';
 import '../domain/models/user_profile.dart';
 import '../../auth/presentation/bloc/auth_bloc.dart';
 import '../../auth/presentation/bloc/auth_event.dart';
+import '../../auth/presentation/bloc/auth_state.dart';
 import 'bloc/profile_bloc.dart';
 import 'bloc/profile_event.dart';
 import 'bloc/profile_state.dart';
@@ -24,7 +25,11 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final authState = context.watch<AuthBloc>().state;
+    final currentUserId = authState is AuthAuthenticated ? authState.user.uid : null;
+
     return BlocProvider(
+      key: ValueKey('${currentUserId}_$targetUsername'),
       create: (context) =>
           ProfileBloc()..add(LoadProfile(username: targetUsername)),
       child: _ProfileView(targetUsername: targetUsername),
@@ -100,7 +105,8 @@ class _ProfileViewState extends State<_ProfileView>
         }
       },
       builder: (context, state) {
-        if (state is ProfileLoading) {
+        final authState = context.watch<AuthBloc>().state;
+        if (state is ProfileLoading || authState is AuthLoading) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
@@ -473,7 +479,6 @@ class _ProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
                         onTap: () {
                           Navigator.pop(sheetContext);
                           context.read<AuthBloc>().add(AuthSwitchAccountRequested(session['uid'] ?? ''));
-                          context.read<ProfileBloc>().add(LoadProfile(username: username));
                         },
                       );
                     }).toList(),
