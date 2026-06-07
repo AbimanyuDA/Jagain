@@ -30,3 +30,7 @@ class RedeemPoints extends ProfileEvent {
   @override
   List<Object> get props => [rewardId];
 }
+
+class ToggleFollow extends ProfileEvent {
+  const ToggleFollow();
+}

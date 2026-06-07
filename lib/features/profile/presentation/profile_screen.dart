@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -12,12 +13,6 @@ import 'widgets/supported_reports_tab.dart';
 import 'widgets/achievements_tab.dart';
 import 'widgets/profile_theme.dart';
 
-/// ProfileScreen — halaman profil warga/pelapor JAGAIN.
-///
-/// Arsitektur:
-///  - BlocProvider menyediakan ProfileBloc
-///  - CustomScrollView + SliverPersistentHeader untuk sticky tab bar
-///  - Tab content menggunakan IndexedStack agar state tidak reset
 class ProfileScreen extends StatelessWidget {
   final String? targetUsername;
 
@@ -26,7 +21,8 @@ class ProfileScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => ProfileBloc()..add(LoadProfile(username: targetUsername)),
+      create: (context) =>
+          ProfileBloc()..add(LoadProfile(username: targetUsername)),
       child: _ProfileView(targetUsername: targetUsername),
     );
   }
@@ -57,9 +53,7 @@ class _ProfileViewState extends State<_ProfileView>
     _tabController = TabController(length: _tabs.length, vsync: this);
     _tabController.addListener(() {
       if (!_tabController.indexIsChanging) {
-        context
-            .read<ProfileBloc>()
-            .add(SwitchProfileTab(_tabController.index));
+        context.read<ProfileBloc>().add(SwitchProfileTab(_tabController.index));
       }
     });
   }
@@ -74,16 +68,18 @@ class _ProfileViewState extends State<_ProfileView>
   Widget build(BuildContext context) {
     return BlocConsumer<ProfileBloc, ProfileState>(
       listenWhen: (previous, current) =>
-          current is ProfileLoaded &&
-          (current).redeemSuccessMessage != null,
+          current is ProfileLoaded && (current).redeemSuccessMessage != null,
       listener: (context, state) {
         if (state is ProfileLoaded && state.redeemSuccessMessage != null) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Row(
                 children: [
-                  const Icon(Icons.celebration_rounded,
-                      color: Colors.white, size: 20),
+                  const Icon(
+                    Icons.celebration_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                   const SizedBox(width: 10),
                   Text(state.redeemSuccessMessage!),
                 ],
@@ -91,7 +87,8 @@ class _ProfileViewState extends State<_ProfileView>
               backgroundColor: ProfileColors.statusSolved,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
               margin: const EdgeInsets.all(16),
               duration: const Duration(seconds: 3),
             ),
@@ -106,14 +103,13 @@ class _ProfileViewState extends State<_ProfileView>
         }
 
         if (state is ProfileError) {
-          return Scaffold(
-            body: Center(child: Text(state.message)),
-          );
+          return Scaffold(body: Center(child: Text(state.message)));
         }
 
         if (state is ProfileLoaded) {
           final profile = state.profile;
-          final isOwnProfile = widget.targetUsername == null || widget.targetUsername == 'budisantoso_jkt';
+          final isOwnProfile =
+              profile.id == FirebaseAuth.instance.currentUser?.uid;
 
           return Scaffold(
             backgroundColor: Colors.white,
@@ -132,8 +128,7 @@ class _ProfileViewState extends State<_ProfileView>
                     ),
                   ),
                 ],
-  
-                // ── Tab Content ───────────────────────────────────────────────
+
                 body: Container(
                   color: const Color(0xFFF8F9FA),
                   child: TabBarView(
@@ -154,15 +149,12 @@ class _ProfileViewState extends State<_ProfileView>
           );
         }
 
-        return const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        );
+        return const Scaffold(body: Center(child: CircularProgressIndicator()));
       },
     );
   }
 }
 
-// ── Tab Bar Component ─────────────────────────────────────────────────────────
 class _TabItem {
   final String label;
   final IconData icon;
@@ -173,10 +165,7 @@ class _ProfileTabBar extends StatelessWidget {
   final TabController controller;
   final List<_TabItem> tabs;
 
-  const _ProfileTabBar({
-    required this.controller,
-    required this.tabs,
-  });
+  const _ProfileTabBar({required this.controller, required this.tabs});
 
   @override
   Widget build(BuildContext context) {
@@ -198,7 +187,6 @@ class _ProfileTabBar extends StatelessWidget {
           fontSize: 12,
           fontWeight: FontWeight.w500,
         ),
-        // Icon + text horizontal — label pendek agar tidak overflow
         tabs: tabs
             .map(
               (t) => Tab(
@@ -219,7 +207,6 @@ class _ProfileTabBar extends StatelessWidget {
   }
 }
 
-// ── Pinned Custom Profile Header Delegate ─────────────────────────────────────
 class _ProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
   final UserProfile profile;
   final bool isOwnProfile;
@@ -233,154 +220,12 @@ class _ProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
     required this.tabs,
   });
 
-  void _showAccountSwitcher(BuildContext context, String currentUsername) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) {
-        return SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const SizedBox(height: 10),
-              Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade300,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 20),
-              
-              // Akun Budi
-              ListTile(
-                leading: const CircleAvatar(
-                  backgroundImage: NetworkImage(
-                    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300',
-                  ),
-                ),
-                title: const Text(
-                  'budisantoso_jkt',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F1E36),
-                  ),
-                ),
-                trailing: currentUsername == 'budisantoso_jkt'
-                    ? const Icon(Icons.check_circle_rounded, color: Color(0xFF00A550))
-                    : null,
-                onTap: () {
-                  Navigator.pop(context);
-                  if (currentUsername != 'budisantoso_jkt') {
-                    context.read<ProfileBloc>().add(const LoadProfile(username: 'budisantoso_jkt'));
-                  }
-                },
-              ),
-              
-              // Akun Aditya
-              ListTile(
-                leading: const CircleAvatar(
-                  backgroundImage: NetworkImage(
-                    'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
-                  ),
-                ),
-                title: const Text(
-                  'aditya_wijaya',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F1E36),
-                  ),
-                ),
-                trailing: currentUsername == 'aditya_wijaya'
-                    ? const Icon(Icons.check_circle_rounded, color: Color(0xFF00A550))
-                    : null,
-                onTap: () {
-                  Navigator.pop(context);
-                  if (currentUsername != 'aditya_wijaya') {
-                    context.read<ProfileBloc>().add(const LoadProfile(username: 'aditya_wijaya'));
-                  }
-                },
-              ),
-
-              // Akun Siti
-              ListTile(
-                leading: const CircleAvatar(
-                  backgroundImage: NetworkImage(
-                    'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
-                  ),
-                ),
-                title: const Text(
-                  'sitiaminah',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F1E36),
-                  ),
-                ),
-                trailing: currentUsername == 'sitiaminah'
-                    ? const Icon(Icons.check_circle_rounded, color: Color(0xFF00A550))
-                    : null,
-                onTap: () {
-                  Navigator.pop(context);
-                  if (currentUsername != 'sitiaminah') {
-                    context.read<ProfileBloc>().add(const LoadProfile(username: 'sitiaminah'));
-                  }
-                },
-              ),
-              
-              const Divider(),
-              
-              // Tambah Akun
-              ListTile(
-                leading: Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.add_rounded, color: Color(0xFF0F1E36)),
-                ),
-                title: const Text(
-                  'Tambah Akun Baru',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF0F1E36),
-                  ),
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  showDialog(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      title: const Text('Tambah Akun Baru'),
-                      content: const Text('Fitur integrasi multi-akun akan tersedia pada versi rilis berikutnya.'),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(context),
-                          child: const Text('OK', style: TextStyle(color: Color(0xFF0F1E36))),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
-              const SizedBox(height: 10),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
   @override
   Widget build(
-      BuildContext context, double shrinkOffset, bool overlapsContent) {
-    // Menghitung opasitas bagian tengah (detail profil)
+    BuildContext context,
+    double shrinkOffset,
+    bool overlapsContent,
+  ) {
     final double visibleThreshold = maxExtent - minExtent;
     final double percent = (shrinkOffset / visibleThreshold).clamp(0.0, 1.0);
     final double detailsOpacity = 1.0 - percent;
@@ -389,9 +234,8 @@ class _ProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
       color: Colors.white,
       child: Stack(
         children: [
-          // ── 1. Profile Details & Stats (Middle) ──
           Positioned(
-            top: 46 - (shrinkOffset * 0.8), // Efek parallax scroll up
+            top: 46 - (shrinkOffset * 0.8),
             left: 0,
             right: 0,
             child: Opacity(
@@ -406,22 +250,20 @@ class _ProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
             ),
           ),
 
-          // ── 2. Top Bar (Username & Back button) ──
           Positioned(
             top: 0,
             left: 0,
             right: 0,
-            height: 46, // Dipersempit dari 56 -> 46 agar lebih tipis ala IG
+            height: 46,
             child: Container(
-              color: Colors.white.withAlpha((percent * 255).round()), // Fade-in solid white background
+              color: Colors.white.withAlpha((percent * 255).round()),
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
                   children: [
                     if (isOwnProfile) ...[
                       IconButton(
-                        icon: const Icon(Icons.add,
-                            color: Color(0xFF0F1E36)),
+                        icon: const Icon(Icons.add, color: Color(0xFF0F1E36)),
                         onPressed: () => context.push('/create-report'),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
@@ -429,65 +271,33 @@ class _ProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
                       const Spacer(),
                     ] else ...[
                       IconButton(
-                        icon: const Icon(Icons.arrow_back_ios_new_rounded,
-                            color: Color(0xFF0F1E36), size: 20),
+                        icon: const Icon(
+                          Icons.arrow_back_ios_new_rounded,
+                          color: Color(0xFF0F1E36),
+                          size: 20,
+                        ),
                         onPressed: () => context.pop(),
                         padding: EdgeInsets.zero,
                         constraints: const BoxConstraints(),
                       ),
                       const SizedBox(width: 12),
                     ],
-                    if (isOwnProfile)
-                      GestureDetector(
-                        onTap: () => _showAccountSwitcher(context, profile.username),
-                        behavior: HitTestBehavior.opaque,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              profile.username,
-                              style: const TextStyle(
-                                color: Color(0xFF0F1E36),
-                                fontWeight: FontWeight.w700,
-                                fontSize: 16,
-                                letterSpacing: -0.4,
-                              ),
-                            ),
-                            if (profile.isVerifiedCitizen) ...[
-                              const SizedBox(width: 4),
-                              const Icon(
-                                Icons.verified_rounded,
-                                color: Color(0xFF2E5BFF),
-                                size: 14,
-                              ),
-                            ],
-                            const SizedBox(width: 2),
-                            const Icon(
-                              Icons.keyboard_arrow_down_rounded,
-                              color: Color(0xFF0F1E36),
-                              size: 18,
-                            ),
-                          ],
-                        ),
-                      )
-                    else ...[
-                      Text(
-                        profile.username, // Username tanpa @ ala Instagram
-                        style: const TextStyle(
-                          color: Color(0xFF0F1E36),
-                          fontWeight: FontWeight.w700, // Tipis/clean ala IG (w700 dibanding w800)
-                          fontSize: 18,
-                          letterSpacing: -0.4,
-                        ),
+                    Text(
+                      profile.username,
+                      style: TextStyle(
+                        color: const Color(0xFF0F1E36),
+                        fontWeight: FontWeight.w700,
+                        fontSize: isOwnProfile ? 16 : 18,
+                        letterSpacing: -0.4,
                       ),
-                      if (profile.isVerifiedCitizen) ...[
-                        const SizedBox(width: 4),
-                        const Icon(
-                          Icons.verified_rounded,
-                          color: Color(0xFF2E5BFF), // Warna biru verifikasi IG
-                          size: 15,
-                        ),
-                      ],
+                    ),
+                    if (profile.isVerifiedCitizen) ...[
+                      const SizedBox(width: 4),
+                      Icon(
+                        Icons.verified_rounded,
+                        color: const Color(0xFF2E5BFF),
+                        size: isOwnProfile ? 14 : 15,
+                      ),
                     ],
                     const Spacer(),
                     IconButton(
@@ -507,12 +317,11 @@ class _ProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
             ),
           ),
 
-          // ── 3. Tab Bar (Bottom) ──
           Positioned(
             bottom: 0,
             left: 0,
             right: 0,
-            height: 49, // Diubah ke 49 untuk menampung TabBar (48) + border (1) tanpa overflow
+            height: 49,
             child: Container(
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -520,10 +329,7 @@ class _ProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
                   bottom: BorderSide(color: Colors.grey.shade200, width: 1),
                 ),
               ),
-              child: _ProfileTabBar(
-                controller: tabController,
-                tabs: tabs,
-              ),
+              child: _ProfileTabBar(controller: tabController, tabs: tabs),
             ),
           ),
         ],
@@ -532,10 +338,10 @@ class _ProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  double get maxExtent => 390; // Tinggi maksimal header lengkap (diperkecil agar lebih kompak)
+  double get maxExtent => 390;
 
   @override
-  double get minExtent => 95; // Tinggi minimal collapsed (46 toolbar + 49 tabbar)
+  double get minExtent => 95;
 
   @override
   bool shouldRebuild(_ProfileHeaderDelegate oldDelegate) {

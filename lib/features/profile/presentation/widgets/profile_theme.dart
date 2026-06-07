@@ -1,15 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../domain/models/user_profile.dart';
 
-// ── Centralized styling helpers untuk Profile feature ────────────────────────
-
 class ProfileColors {
-  // Brand colors (harus konsisten dengan AppTheme)
   static const Color primary = Color(0xFF2E5BFF);
   static const Color navyDark = Color(0xFF0F1E36);
   static const Color accent = Color(0xFFFFA000);
 
-  // Status Colors — kontras & aksesibel
   static const Color statusSolved = Color(0xFF00A550);
   static const Color statusSolvedBg = Color(0xFFE6F8EF);
   static const Color statusInProgress = Color(0xFF2E5BFF);
@@ -19,14 +15,12 @@ class ProfileColors {
   static const Color statusRejected = Color(0xFFD32F2F);
   static const Color statusRejectedBg = Color(0xFFFFEBEE);
 
-  // Rarity Colors untuk badge
   static const Color rarityCommon = Color(0xFF78909C);
   static const Color rarityRare = Color(0xFF1E88E5);
   static const Color rarityEpic = Color(0xFF7B1FA2);
   static const Color rarityLegendary = Color(0xFFFF8F00);
 }
 
-// ── Status Color Resolver ─────────────────────────────────────────────────────
 class StatusStyle {
   final Color color;
   final Color backgroundColor;
@@ -68,7 +62,6 @@ class StatusStyle {
   }
 }
 
-// ── Category Color Resolver ───────────────────────────────────────────────────
 class CategoryStyle {
   static Color backgroundColor(String category) {
     switch (category.toUpperCase()) {
@@ -109,7 +102,6 @@ class CategoryStyle {
   }
 }
 
-// ── Rarity Color Resolver ────────────────────────────────────────────────────
 class RarityStyle {
   static Color color(BadgeRarity rarity) {
     switch (rarity) {
@@ -138,7 +130,6 @@ class RarityStyle {
   }
 }
 
-// ── Number Formatter ─────────────────────────────────────────────────────────
 String formatNumber(int n) {
   if (n >= 1000) {
     return '${(n / 1000).toStringAsFixed(1)}K';

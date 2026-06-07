@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import '../../domain/models/user_profile.dart';
 import 'profile_theme.dart';
 
-/// Tab 2: Jejak Dukungan — laporan orang lain yang pernah di-upvote
-/// atau disimpan (bookmark) oleh user ini.
 class SupportedReportsTab extends StatelessWidget {
   final List<SupportedReport> reports;
 
@@ -16,8 +14,7 @@ class SupportedReportsTab extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.favorite_border_rounded,
-                size: 48, color: Colors.grey),
+            Icon(Icons.favorite_border_rounded, size: 48, color: Colors.grey),
             SizedBox(height: 12),
             Text('Belum ada laporan yang didukung'),
           ],
@@ -67,7 +64,6 @@ class _SupportedReportCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Image header dengan status overlay ────────────────────────
             Stack(
               children: [
                 SizedBox(
@@ -78,18 +74,21 @@ class _SupportedReportCard extends StatelessWidget {
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => Container(
                       color: Colors.grey.shade200,
-                      child: const Icon(Icons.broken_image_outlined,
-                          color: Colors.grey),
+                      child: const Icon(
+                        Icons.broken_image_outlined,
+                        color: Colors.grey,
+                      ),
                     ),
                   ),
                 ),
-                // Category chip di kiri atas
                 Positioned(
                   top: 10,
                   left: 12,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: catBg,
                       borderRadius: BorderRadius.circular(20),
@@ -104,13 +103,14 @@ class _SupportedReportCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                // Simpan/Upvote indicator di kanan atas
                 Positioned(
                   top: 10,
                   right: 12,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.black54,
                       borderRadius: BorderRadius.circular(20),
@@ -141,13 +141,11 @@ class _SupportedReportCard extends StatelessWidget {
               ],
             ),
 
-            // ── Content ────────────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.all(12),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Title
                   Text(
                     report.title,
                     style: const TextStyle(
@@ -161,14 +159,11 @@ class _SupportedReportCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
 
-                  // Author + time + votes + status
                   Row(
                     children: [
-                      // Author avatar + name
                       CircleAvatar(
                         radius: 10,
-                        backgroundImage:
-                            NetworkImage(report.authorAvatarUrl),
+                        backgroundImage: NetworkImage(report.authorAvatarUrl),
                         backgroundColor: Colors.grey.shade200,
                       ),
                       const SizedBox(width: 6),
@@ -181,10 +176,7 @@ class _SupportedReportCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(width: 6),
-                      Text(
-                        '•',
-                        style: TextStyle(color: Colors.grey.shade400),
-                      ),
+                      Text('•', style: TextStyle(color: Colors.grey.shade400)),
                       const SizedBox(width: 6),
                       Text(
                         report.timeAgo,
@@ -194,8 +186,11 @@ class _SupportedReportCard extends StatelessWidget {
                         ),
                       ),
                       const Spacer(),
-                      Icon(Icons.arrow_upward_rounded,
-                          size: 13, color: Colors.grey.shade500),
+                      Icon(
+                        Icons.arrow_upward_rounded,
+                        size: 13,
+                        color: Colors.grey.shade500,
+                      ),
                       const SizedBox(width: 3),
                       Text(
                         '${report.upvotes}',
@@ -209,11 +204,12 @@ class _SupportedReportCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
 
-                  // Status badge (full width strip)
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 12, vertical: 6),
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: statusStyle.backgroundColor,
                       borderRadius: BorderRadius.circular(8),
@@ -221,8 +217,11 @@ class _SupportedReportCard extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(statusStyle.icon,
-                            size: 13, color: statusStyle.color),
+                        Icon(
+                          statusStyle.icon,
+                          size: 13,
+                          color: statusStyle.color,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           report.status.label,

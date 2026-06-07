@@ -1,0 +1,117 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function role() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function isOfficial() {
+      return isSignedIn() && role() == 'official';
+    }
+
+    function isAdmin() {
+      return isSignedIn() && role() == 'admin';
+    }
+
+    function unchangedExcept(keys) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys);
+    }
+
+    // ── users/{uid} ──────────────────────────────────────────────────────
+    match /users/{userId} {
+      allow read: if true;
+
+      // Registrasi: hanya pemilik akun, dan tidak boleh "lompat" jadi
+      // admin/terverifikasi sendiri (role admin hanya dibuat lewat console).
+      allow create: if isOwner(userId)
+        && request.resource.data.role in ['citizen', 'official']
+        && request.resource.data.isVerified == false;
+
+      // Perubahan peran/status verifikasi hanya lewat panel admin.
+      allow update: if isAdmin();
+      allow delete: if false;
+
+      match /redemptions/{redemptionId} {
+        allow read, create: if isOwner(userId);
+        allow update, delete: if false;
+      }
+    }
+
+    // ── reports/{reportId} ───────────────────────────────────────────────
+    match /reports/{reportId} {
+      allow read: if true;
+
+      allow create: if isSignedIn()
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.status == 'waiting_review'
+        && request.resource.data.upvoterIds == []
+        && request.resource.data.downvoterIds == []
+        && request.resource.data.commentCount == 0;
+
+      // Empat jalur update yang sah & saling terpisah:
+      //  1) pelapor mengedit konten laporannya sendiri
+      //  2) warga mana pun melakukan upvote/downvote (array vote)
+      //  3) penambahan komentar menaikkan commentCount sebanyak 1
+      //  4) pejabat/admin memperbarui status penanganan
+      allow update: if isSignedIn() && (
+        (resource.data.authorId == request.auth.uid &&
+          unchangedExcept(['title', 'description', 'category', 'urgency', 'imageUrls', 'updatedAt'])) ||
+        unchangedExcept(['upvoterIds', 'downvoterIds']) ||
+        (unchangedExcept(['commentCount']) &&
+          request.resource.data.commentCount == resource.data.commentCount + 1) ||
+        ((isOfficial() || isAdmin()) &&
+          unchangedExcept(['status', 'updatedAt', 'statusUpdateCount']))
+      );
+
+      allow delete: if isAdmin();
+
+      match /comments/{commentId} {
+        allow read: if true;
+
+        allow create: if isSignedIn()
+          && request.resource.data.authorId == request.auth.uid
+          && request.resource.data.isPinned == false
+          && request.resource.data.likedBy == [];
+
+        // like/unlike (siapa pun) atau pin/unpin (khusus official/admin)
+        allow update: if isSignedIn() && (
+          unchangedExcept(['likedBy']) ||
+          ((isOfficial() || isAdmin()) && unchangedExcept(['isPinned']))
+        );
+
+        allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
+      }
+
+      match /statusUpdates/{updateId} {
+        allow read: if true;
+        allow create: if (isOfficial() || isAdmin())
+          && request.resource.data.officialId == request.auth.uid;
+        allow update, delete: if false;
+      }
+    }
+
+    // ── follows/{followerId_followeeId} ─────────────────────────────────
+    match /follows/{followId} {
+      allow read: if true;
+      allow create: if isSignedIn() && request.resource.data.followerId == request.auth.uid;
+      allow delete: if isSignedIn() && resource.data.followerId == request.auth.uid;
+      allow update: if false;
+    }
+
+    // ── categories/{categoryId} ──────────────────────────────────────────
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}
