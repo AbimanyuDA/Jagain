@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import '../../../app/routes.dart';
 import 'bloc/feed_bloc.dart';
 import 'bloc/feed_event.dart';
 import 'bloc/feed_state.dart';
@@ -145,17 +144,6 @@ class _FeedScreenState extends State<FeedScreen> {
             const ProfileScreen(),
           ],
         ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            context.push(AppRoutes.createReport);
-          },
-          backgroundColor: const Color(0xFF0F1E36),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Icon(Icons.add, color: Colors.white, size: 28),
-        ),
-
         bottomNavigationBar: Container(
           decoration: BoxDecoration(
             border: Border(

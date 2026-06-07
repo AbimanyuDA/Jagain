@@ -20,6 +20,7 @@ class MinioStorageService {
         accessKey: dotenv.env['MINIO_ACCESS_KEY'] ?? '',
         secretKey: dotenv.env['MINIO_SECRET_KEY'] ?? '',
         useSSL: (dotenv.env['MINIO_USE_SSL'] ?? 'true').toLowerCase() == 'true',
+        region: 'us-east-1',
       ),
       _bucket = dotenv.env['MINIO_BUCKET'] ?? '',
       _publicUrlBase = dotenv.env['MINIO_PUBLIC_URL_BASE'] ?? '';
