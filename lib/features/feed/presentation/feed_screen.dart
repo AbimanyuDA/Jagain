@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 import 'bloc/feed_bloc.dart';
 import 'bloc/feed_event.dart';
 import 'bloc/feed_state.dart';
 import 'widgets/post_card.dart';
+import '../../profile/presentation/profile_screen.dart';
 
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
@@ -20,33 +22,37 @@ class _FeedScreenState extends State<FeedScreen> {
     return BlocProvider(
       create: (context) => FeedBloc()..add(LoadFeed()),
       child: Scaffold(
-        appBar: AppBar(
-          leading: IconButton(
-            icon: const Icon(Icons.menu, color: Color(0xFF0F1E36)),
-            onPressed: () {},
-          ),
-          title: const Text(
-            'JAGAIN',
-            style: TextStyle(
-              color: Color(0xFF0F1E36), // Match mockup bold dark logo style
-              fontWeight: FontWeight.w900,
-              fontSize: 22,
-              letterSpacing: 0.5,
-            ),
-          ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.search, color: Color(0xFF0F1E36)),
-              onPressed: () {},
-            ),
-          ],
-          backgroundColor: Colors.white,
-          elevation: 0.5,
-        ),
+        appBar: (_currentIndex == 0 || _currentIndex == 3)
+            ? null
+            : AppBar(
+                leading: IconButton(
+                  icon: const Icon(Icons.add, color: Color(0xFF0F1E36)),
+                  onPressed: () {
+                    context.push('/create-report');
+                  },
+                ),
+                automaticallyImplyLeading: false,
+                title: const Text(
+                  'JAGAIN',
+                  style: TextStyle(
+                    color: Color(0xFF0F1E36),
+                    fontWeight: FontWeight.w900,
+                    fontSize: 22,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.search, color: Color(0xFF0F1E36)),
+                    onPressed: () {},
+                  ),
+                ],
+                backgroundColor: Colors.white,
+                elevation: 0.5,
+              ),
         body: IndexedStack(
           index: _currentIndex,
           children: [
-            // Tab 1: Feed (Developer B)
             BlocBuilder<FeedBloc, FeedState>(
               builder: (context, state) {
                 if (state is FeedLoading) {
@@ -57,21 +63,69 @@ class _FeedScreenState extends State<FeedScreen> {
                     onRefresh: () async {
                       context.read<FeedBloc>().add(LoadFeed());
                     },
-                    child: ListView.builder(
-                      itemCount: posts.length,
-                      padding: const EdgeInsets.only(top: 8, bottom: 80), // Padding to avoid FAB overlap
-                      itemBuilder: (context, index) {
-                        final post = posts[index];
-                        return PostCard(
-                          post: post,
-                          onUpvotePressed: () {
-                            context.read<FeedBloc>().add(ToggleUpvote(post.id));
-                          },
-                          onDownvotePressed: () {
-                            context.read<FeedBloc>().add(ToggleDownvote(post.id));
-                          },
-                        );
-                      },
+                    child: CustomScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      slivers: [
+                        SliverAppBar(
+                          floating: true,
+                          snap: true,
+                          pinned: false,
+                          leading: IconButton(
+                            icon: const Icon(
+                              Icons.add,
+                              color: Color(0xFF0F1E36),
+                            ),
+                            onPressed: () {
+                              context.push('/create-report');
+                            },
+                          ),
+                          automaticallyImplyLeading: false,
+                          title: const Text(
+                            'JAGAIN',
+                            style: TextStyle(
+                              color: Color(0xFF0F1E36),
+                              fontWeight: FontWeight.w900,
+                              fontSize: 22,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          actions: [
+                            IconButton(
+                              icon: const Icon(
+                                Icons.search,
+                                color: Color(0xFF0F1E36),
+                              ),
+                              onPressed: () {},
+                            ),
+                          ],
+                          backgroundColor: Colors.white,
+                          elevation: 0.5,
+                        ),
+                        SliverPadding(
+                          padding: const EdgeInsets.only(top: 8, bottom: 80),
+                          sliver: SliverList(
+                            delegate: SliverChildBuilderDelegate((
+                              context,
+                              index,
+                            ) {
+                              final post = posts[index];
+                              return PostCard(
+                                post: post,
+                                onUpvotePressed: () {
+                                  context.read<FeedBloc>().add(
+                                    ToggleUpvote(post.id),
+                                  );
+                                },
+                                onDownvotePressed: () {
+                                  context.read<FeedBloc>().add(
+                                    ToggleDownvote(post.id),
+                                  );
+                                },
+                              );
+                            }, childCount: posts.length),
+                          ),
+                        ),
+                      ],
                     ),
                   );
                 } else if (state is FeedError) {
@@ -80,34 +134,21 @@ class _FeedScreenState extends State<FeedScreen> {
                 return const Center(child: Text('Memuat Laporan...'));
               },
             ),
-            
-            // Tab 2: Near Me Placeholder (Developer C)
-            const Center(child: Text('Halaman Near Me (Peta Laporan Terdekat)')),
-            
-            // Tab 3: Stats Placeholder (Developer A / C)
+
+            const Center(
+              child: Text('Halaman Near Me (Peta Laporan Terdekat)'),
+            ),
+
             const Center(child: Text('Halaman Statistik & Grafik Laporan')),
-            
-            // Tab 4: Profile Placeholder (Developer A)
-            const Center(child: Text('Halaman Profil Pengguna')),
+
+            const ProfileScreen(),
           ],
         ),
-        
-        // Floating Action Button for reporting (Developer C entrypoint)
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            // TODO: Route to Create Report Screen
-          },
-          backgroundColor: const Color(0xFF0F1E36), // Match dark blue button in mockup
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Icon(Icons.add, color: Colors.white, size: 28),
-        ),
-
-        // Bottom Navigation Bar
         bottomNavigationBar: Container(
           decoration: BoxDecoration(
-            border: Border(top: BorderSide(color: Colors.grey.shade200, width: 1)),
+            border: Border(
+              top: BorderSide(color: Colors.grey.shade200, width: 1),
+            ),
           ),
           child: BottomNavigationBar(
             currentIndex: _currentIndex,
@@ -118,9 +159,12 @@ class _FeedScreenState extends State<FeedScreen> {
             },
             type: BottomNavigationBarType.fixed,
             backgroundColor: Colors.white,
-            selectedItemColor: const Color(0xFFE53935), // Match red selected color in mockup
+            selectedItemColor: const Color(0xFFE53935),
             unselectedItemColor: Colors.grey.shade500,
-            selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+            selectedLabelStyle: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
             unselectedLabelStyle: const TextStyle(fontSize: 12),
             items: const [
               BottomNavigationBarItem(

@@ -1,11 +1,3 @@
-// Firebase configuration loaded from .env file.
-// Jangan hardcode API key di sini! Semua dibaca dari environment variables.
-//
-// CARA SETUP:
-// 1. Copy file .env.example menjadi .env
-// 2. Isi nilai-nilai di .env dengan API key dari Firebase Console
-// 3. Atau jalankan: flutterfire configure lalu salin nilainya ke .env
-//
 // ignore_for_file: type=lint
 import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
 import 'package:flutter/foundation.dart'

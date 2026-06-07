@@ -20,7 +20,9 @@ void main() async {
     );
   } catch (e) {
     debugPrint("Pemberitahuan: Inisialisasi Firebase gagal.");
-    debugPrint("Harap jalankan 'flutterfire configure' untuk menghubungkan aplikasi dengan Firebase console Anda.");
+    debugPrint(
+      "Harap jalankan 'flutterfire configure' untuk menghubungkan aplikasi dengan Firebase console Anda.",
+    );
     debugPrint("Error detail: $e");
   }
 
@@ -33,8 +35,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) => AuthBloc(repository: AuthRepository())
-        ..add(AuthCheckRequested()),
+      create: (_) =>
+          AuthBloc(repository: AuthRepository())..add(AuthCheckRequested()),
       child: MaterialApp.router(
         title: 'Jagain',
         theme: AppTheme.lightTheme,
