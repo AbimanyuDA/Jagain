@@ -13,6 +13,8 @@ class UserProfile {
   final int reportsSolved;
   final int upvotesGiven;
   final int totalReports;
+  final int followersCount;
+  final int followingCount;
   final List<UserReport> myReports;
   final List<SupportedReport> supportedReports;
   final List<Badge> badges;
@@ -30,6 +32,8 @@ class UserProfile {
     required this.reportsSolved,
     required this.upvotesGiven,
     required this.totalReports,
+    required this.followersCount,
+    required this.followingCount,
     required this.myReports,
     required this.supportedReports,
     required this.badges,

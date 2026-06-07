@@ -9,11 +9,13 @@ import 'profile_theme.dart';
 class AchievementsTab extends StatelessWidget {
   final List<Badge> badges;
   final int availablePoints;
+  final bool isOwnProfile;
 
   const AchievementsTab({
     super.key,
     required this.badges,
     required this.availablePoints,
+    this.isOwnProfile = true,
   });
 
   @override
@@ -47,56 +49,58 @@ class AchievementsTab extends StatelessWidget {
               return _BadgeCard(badge: badges[index]);
             },
           ),
-          const SizedBox(height: 28),
 
-          // ── Tukar Poin Section ──────────────────────────────────────────
-          _SectionHeader(
-            title: 'Tukar Poin Kontribusi',
-            subtitle: null,
-          ),
-          const SizedBox(height: 6),
+          if (isOwnProfile) ...[
+            const SizedBox(height: 28),
+            // ── Tukar Poin Section ──────────────────────────────────────────
+            _SectionHeader(
+              title: 'Tukar Poin Kontribusi',
+              subtitle: null,
+            ),
+            const SizedBox(height: 6),
 
-          // Points balance chip
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFFFB300), Color(0xFFFF8F00)],
+            // Points balance chip
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFFFB300), Color(0xFFFF8F00)],
+                ),
+                borderRadius: BorderRadius.circular(12),
               ),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.stars_rounded,
-                    color: Colors.white, size: 18),
-                const SizedBox(width: 6),
-                Text(
-                  '${formatNumber(availablePoints)} poin tersedia',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.stars_rounded,
+                      color: Colors.white, size: 18),
+                  const SizedBox(width: 6),
+                  Text(
+                    '${formatNumber(availablePoints)} poin tersedia',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(height: 14),
+            const SizedBox(height: 14),
 
-          // Reward list
-          ...rewards.map((reward) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: _RewardCard(
-                  reward: reward,
-                  availablePoints: availablePoints,
-                  onRedeem: () {
-                    context
-                        .read<ProfileBloc>()
-                        .add(RedeemPoints(reward.id));
-                  },
-                ),
-              )),
+            // Reward list
+            ...rewards.map((reward) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _RewardCard(
+                    reward: reward,
+                    availablePoints: availablePoints,
+                    onRedeem: () {
+                      context
+                          .read<ProfileBloc>()
+                          .add(RedeemPoints(reward.id));
+                    },
+                  ),
+                )),
+          ],
         ],
       ),
     );

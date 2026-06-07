@@ -18,6 +18,8 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     reportsSolved: 14,
     upvotesGiven: 87,
     totalReports: 23,
+    followersCount: 1248,
+    followingCount: 186,
     availablePointsForRedeem: 1_200,
     myReports: [
       const UserReport(
@@ -169,6 +171,112 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         isUnlocked: false,
       ),
     ],
+  );  static final UserProfile _adityaProfile = UserProfile(
+    id: 'user_002',
+    username: 'aditya_wijaya',
+    displayName: 'Aditya Wijaya',
+    avatarUrl:
+        'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
+    domicile: 'Bandung, Jawa Barat',
+    isVerifiedCitizen: true,
+    gamificationTitle: 'Pahlawan Jalanan',
+    civicPoints: 1420,
+    reportsSolved: 8,
+    upvotesGiven: 45,
+    totalReports: 12,
+    followersCount: 842,
+    followingCount: 310,
+    availablePointsForRedeem: 600,
+    myReports: [
+      const UserReport(
+        id: 'r1_aditya',
+        title: 'Lubang Jalan di Jalan Merdeka',
+        category: 'JALAN',
+        imageUrl:
+            'https://images.unsplash.com/photo-1515162305285-0293e4767cc2?w=400',
+        timeAgo: '2h ago',
+        upvotes: 142,
+        status: ReportStatus.solved,
+      ),
+    ],
+    supportedReports: [
+      const SupportedReport(
+        id: 's1_aditya',
+        title: 'Selokan Mampet Jl. Kemang Timur',
+        authorName: 'aditya_wijaya',
+        authorAvatarUrl:
+            'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
+        category: 'DRAINASE',
+        imageUrl:
+            'https://images.unsplash.com/photo-1504386106-b41949b7e9a8?w=400',
+        timeAgo: '1 minggu lalu',
+        upvotes: 31,
+        status: ReportStatus.waitingReview,
+        isSaved: false,
+      ),
+    ],
+    badges: [
+      const Badge(
+        id: 'b1',
+        name: 'Pelopor Pertama',
+        description: 'Buat laporan pertamamu',
+        icon: '🏅',
+        rarity: BadgeRarity.common,
+        isUnlocked: true,
+        unlockedAt: '12 Jan 2025',
+      ),
+      const Badge(
+        id: 'b2',
+        name: 'Pahlawan Aspal',
+        description: 'Miliki 5 laporan jalan yang diselesaikan',
+        icon: '🛣️',
+        rarity: BadgeRarity.rare,
+        isUnlocked: true,
+        unlockedAt: '15 Mar 2025',
+      ),
+    ],
+  );
+
+  static final UserProfile _sitiProfile = UserProfile(
+    id: 'user_003',
+    username: 'sitiaminah',
+    displayName: 'Siti Aminah',
+    avatarUrl:
+        'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
+    domicile: 'Surabaya, Jawa Timur',
+    isVerifiedCitizen: false,
+    gamificationTitle: 'Citizen Reporter',
+    civicPoints: 450,
+    reportsSolved: 2,
+    upvotesGiven: 15,
+    totalReports: 3,
+    followersCount: 320,
+    followingCount: 145,
+    availablePointsForRedeem: 150,
+    myReports: [
+      const UserReport(
+        id: 'r1_siti',
+        title: 'Lampu PJU Padam di Gatsu',
+        category: 'PJU',
+        imageUrl:
+            'https://images.unsplash.com/photo-1509024640742-b67bf6b45084?w=400',
+        timeAgo: '5h ago',
+        upvotes: 45,
+        status: ReportStatus.inProgress,
+      ),
+    ],
+    supportedReports: [],
+    badges: [
+      const Badge(
+        id: 'b1',
+        name: 'Pelopor Pertama',
+        description: 'Buat laporan pertamamu',
+        icon: '🏅',
+        rarity: BadgeRarity.common,
+        isUnlocked: true,
+        unlockedAt: '20 Feb 2025',
+      ),
+    ],
   );
 
   // ── Reward Catalog ────────────────────────────────────────────────────────
@@ -218,7 +326,15 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
       LoadProfile event, Emitter<ProfileState> emit) async {
     emit(ProfileLoading());
     await Future.delayed(const Duration(milliseconds: 400));
-    emit(ProfileLoaded(profile: _mockProfile));
+    
+    final username = event.username;
+    if (username == 'aditya_wijaya') {
+      emit(ProfileLoaded(profile: _adityaProfile));
+    } else if (username == 'sitiaminah') {
+      emit(ProfileLoaded(profile: _sitiProfile));
+    } else {
+      emit(ProfileLoaded(profile: _mockProfile));
+    }
   }
 
   void _onSwitchProfileTab(
@@ -248,6 +364,8 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
         reportsSolved: currentState.profile.reportsSolved,
         upvotesGiven: currentState.profile.upvotesGiven,
         totalReports: currentState.profile.totalReports,
+        followersCount: currentState.profile.followersCount,
+        followingCount: currentState.profile.followingCount,
         myReports: currentState.profile.myReports,
         supportedReports: currentState.profile.supportedReports,
         badges: currentState.profile.badges,

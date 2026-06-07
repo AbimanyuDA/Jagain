@@ -8,13 +8,18 @@ class FeedBloc extends Bloc<FeedEvent, FeedState> {
   final List<ReportPost> _mockPosts = [
     const ReportPost(
       id: 'post_1',
-      userName: 'Aditya Wijaya',
+      userName: 'aditya_wijaya',
       userAvatarUrl: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
       userBadge: 'Verified',
       timeAgo: '2h ago',
       title: 'Lubang Jalan di Jalan Merdeka',
       description: 'Large pothole causing significant traffic delays near the central square. Motorists...',
       imageUrl: 'https://images.unsplash.com/photo-1515162305285-0293e4767cc2?w=600',
+      imageUrls: [
+        'https://images.unsplash.com/photo-1515162305285-0293e4767cc2?w=600',
+        'https://images.unsplash.com/photo-1599740831146-80cf84dd141b?w=600',
+        'https://images.unsplash.com/photo-1584467541268-b040f83be3fd?w=600',
+      ],
       category: 'JALAN',
       urgency: 'URGENT',
       upvotes: 142,
@@ -23,7 +28,7 @@ class FeedBloc extends Bloc<FeedEvent, FeedState> {
     ),
     const ReportPost(
       id: 'post_2',
-      userName: 'Siti Aminah',
+      userName: 'sitiaminah',
       userAvatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150',
       userBadge: 'Citizen Reporter',
       timeAgo: '5h ago',

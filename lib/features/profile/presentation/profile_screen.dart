@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import '../domain/models/user_profile.dart';
 import 'bloc/profile_bloc.dart';
 import 'bloc/profile_event.dart';
 import 'bloc/profile_state.dart';
@@ -17,19 +19,23 @@ import 'widgets/profile_theme.dart';
 ///  - CustomScrollView + SliverPersistentHeader untuk sticky tab bar
 ///  - Tab content menggunakan IndexedStack agar state tidak reset
 class ProfileScreen extends StatelessWidget {
-  const ProfileScreen({super.key});
+  final String? targetUsername;
+
+  const ProfileScreen({super.key, this.targetUsername});
 
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => ProfileBloc()..add(const LoadProfile()),
-      child: const _ProfileView(),
+      create: (context) => ProfileBloc()..add(LoadProfile(username: targetUsername)),
+      child: _ProfileView(targetUsername: targetUsername),
     );
   }
 }
 
 class _ProfileView extends StatefulWidget {
-  const _ProfileView();
+  final String? targetUsername;
+
+  const _ProfileView({this.targetUsername});
 
   @override
   State<_ProfileView> createState() => _ProfileViewState();
@@ -40,7 +46,7 @@ class _ProfileViewState extends State<_ProfileView>
   late final TabController _tabController;
 
   static const List<_TabItem> _tabs = [
-    _TabItem(label: 'Laporanku', icon: Icons.article_outlined),
+    _TabItem(label: 'Laporan', icon: Icons.article_outlined),
     _TabItem(label: 'Dukungan', icon: Icons.favorite_outline_rounded),
     _TabItem(label: 'Pencapaian', icon: Icons.emoji_events_outlined),
   ];
@@ -107,6 +113,7 @@ class _ProfileViewState extends State<_ProfileView>
 
         if (state is ProfileLoaded) {
           final profile = state.profile;
+          final isOwnProfile = widget.targetUsername == null || widget.targetUsername == 'budisantoso_jkt';
 
           return Scaffold(
             backgroundColor: Colors.white,
@@ -115,29 +122,13 @@ class _ProfileViewState extends State<_ProfileView>
               bottom: false,
               child: NestedScrollView(
                 headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                  // ── Header: ProfileHeader + ImpactStatsCard dalam Column ──
-                  // Menggunakan SliverToBoxAdapter jauh lebih aman daripada
-                  // SliverAppBar+FlexibleSpaceBar untuk konten yang fixed-height.
-                  SliverToBoxAdapter(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Gradient hero section
-                        ProfileHeader(profile: profile),
-                        // Stats card langsung di bawah gradient — no gap
-                        ImpactStatsCard(profile: profile),
-                      ],
-                    ),
-                  ),
-  
-                  // ── Sticky Tab Bar ────────────────────────────────────────
                   SliverPersistentHeader(
                     pinned: true,
-                    delegate: _StickyTabBarDelegate(
-                      child: _ProfileTabBar(
-                        controller: _tabController,
-                        tabs: _tabs,
-                      ),
+                    delegate: _ProfileHeaderDelegate(
+                      profile: profile,
+                      isOwnProfile: isOwnProfile,
+                      tabController: _tabController,
+                      tabs: _tabs,
                     ),
                   ),
                 ],
@@ -153,6 +144,7 @@ class _ProfileViewState extends State<_ProfileView>
                       AchievementsTab(
                         badges: profile.badges,
                         availablePoints: profile.availablePointsForRedeem,
+                        isOwnProfile: isOwnProfile,
                       ),
                     ],
                   ),
@@ -190,73 +182,178 @@ class _ProfileTabBar extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       color: Colors.white,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TabBar(
-            controller: controller,
-            indicatorColor: ProfileColors.primary,
-            indicatorWeight: 3,
-            indicatorSize: TabBarIndicatorSize.tab,
-            labelColor: ProfileColors.primary,
-            unselectedLabelColor: Colors.grey.shade500,
-            labelStyle: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.1,
-            ),
-            unselectedLabelStyle: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-            // Icon + text horizontal — label pendek agar tidak overflow
-            tabs: tabs
-                .map(
-                  (t) => Tab(
-                    height: 44,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(t.icon, size: 15),
-                        const SizedBox(width: 5),
-                        Text(t.label),
-                      ],
-                    ),
-                  ),
-                )
-                .toList(),
-          ),
-          Divider(height: 1, color: Colors.grey.shade200),
-        ],
+      child: TabBar(
+        controller: controller,
+        indicatorColor: ProfileColors.primary,
+        indicatorWeight: 3,
+        indicatorSize: TabBarIndicatorSize.tab,
+        labelColor: ProfileColors.primary,
+        unselectedLabelColor: Colors.grey.shade500,
+        labelStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.1,
+        ),
+        unselectedLabelStyle: const TextStyle(
+          fontSize: 12,
+          fontWeight: FontWeight.w500,
+        ),
+        // Icon + text horizontal — label pendek agar tidak overflow
+        tabs: tabs
+            .map(
+              (t) => Tab(
+                height: 44,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(t.icon, size: 15),
+                    const SizedBox(width: 5),
+                    Text(t.label),
+                  ],
+                ),
+              ),
+            )
+            .toList(),
       ),
     );
   }
 }
 
-// ── Sticky Tab Bar Delegate ───────────────────────────────────────────────────
-class _StickyTabBarDelegate extends SliverPersistentHeaderDelegate {
-  final Widget child;
+// ── Pinned Custom Profile Header Delegate ─────────────────────────────────────
+class _ProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
+  final UserProfile profile;
+  final bool isOwnProfile;
+  final TabController tabController;
+  final List<_TabItem> tabs;
 
-  _StickyTabBarDelegate({required this.child});
+  _ProfileHeaderDelegate({
+    required this.profile,
+    required this.isOwnProfile,
+    required this.tabController,
+    required this.tabs,
+  });
 
   @override
   Widget build(
       BuildContext context, double shrinkOffset, bool overlapsContent) {
-    return Material(
-      elevation: overlapsContent ? 2 : 0,
-      shadowColor: Colors.black12,
-      child: child,
+    // Menghitung opasitas bagian tengah (detail profil)
+    final double visibleThreshold = maxExtent - minExtent;
+    final double percent = (shrinkOffset / visibleThreshold).clamp(0.0, 1.0);
+    final double detailsOpacity = 1.0 - percent;
+
+    return Container(
+      color: Colors.white,
+      child: Stack(
+        children: [
+          // ── 1. Profile Details & Stats (Middle) ──
+          Positioned(
+            top: 46 - (shrinkOffset * 0.8), // Efek parallax scroll up
+            left: 0,
+            right: 0,
+            child: Opacity(
+              opacity: detailsOpacity,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  ProfileHeader(profile: profile, isOwnProfile: isOwnProfile),
+                  ImpactStatsCard(profile: profile),
+                ],
+              ),
+            ),
+          ),
+
+          // ── 2. Top Bar (Username & Back button) ──
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            height: 46, // Dipersempit dari 56 -> 46 agar lebih tipis ala IG
+            child: Container(
+              color: Colors.white.withAlpha((percent * 255).round()), // Fade-in solid white background
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Row(
+                  children: [
+                    if (!isOwnProfile) ...[
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back_ios_new_rounded,
+                            color: Color(0xFF0F1E36), size: 20),
+                        onPressed: () => context.pop(),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                      ),
+                      const SizedBox(width: 12),
+                    ],
+                    Text(
+                      profile.username, // Username tanpa @ ala Instagram
+                      style: const TextStyle(
+                        color: Color(0xFF0F1E36),
+                        fontWeight: FontWeight.w700, // Tipis/clean ala IG (w700 dibanding w800)
+                        fontSize: 18,
+                        letterSpacing: -0.4,
+                      ),
+                    ),
+                    if (profile.isVerifiedCitizen) ...[
+                      const SizedBox(width: 4),
+                      const Icon(
+                        Icons.verified_rounded,
+                        color: Color(0xFF2E5BFF), // Warna biru verifikasi IG
+                        size: 15,
+                      ),
+                    ],
+                    const Spacer(),
+                    IconButton(
+                      icon: Icon(
+                        isOwnProfile
+                            ? Icons.menu_rounded
+                            : Icons.more_horiz_rounded,
+                        color: const Color(0xFF0F1E36),
+                      ),
+                      onPressed: () {},
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
+          // ── 3. Tab Bar (Bottom) ──
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 49, // Diubah ke 49 untuk menampung TabBar (48) + border (1) tanpa overflow
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  bottom: BorderSide(color: Colors.grey.shade200, width: 1),
+                ),
+              ),
+              child: _ProfileTabBar(
+                controller: tabController,
+                tabs: tabs,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   @override
-  double get maxExtent => 48;
+  double get maxExtent => 390; // Tinggi maksimal header lengkap (diperkecil agar lebih kompak)
 
   @override
-  double get minExtent => 48;
+  double get minExtent => 95; // Tinggi minimal collapsed (46 toolbar + 49 tabbar)
 
   @override
-  bool shouldRebuild(_StickyTabBarDelegate oldDelegate) {
-    return child != oldDelegate.child;
+  bool shouldRebuild(_ProfileHeaderDelegate oldDelegate) {
+    return oldDelegate.profile != profile ||
+        oldDelegate.isOwnProfile != isOwnProfile ||
+        oldDelegate.tabController != tabController ||
+        oldDelegate.tabs != tabs;
   }
 }
