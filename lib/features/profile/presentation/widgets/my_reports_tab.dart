@@ -64,17 +64,25 @@ class _MyReportCard extends StatelessWidget {
             SizedBox(
               width: 100,
               height: 110,
-              child: Image.network(
-                report.imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(
-                  color: Colors.grey.shade200,
-                  child: const Icon(
-                    Icons.broken_image_outlined,
-                    color: Colors.grey,
-                  ),
-                ),
-              ),
+              child: report.imageUrl.isNotEmpty
+                  ? Image.network(
+                      report.imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => Container(
+                        color: Colors.grey.shade200,
+                        child: const Icon(
+                          Icons.broken_image_outlined,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    )
+                  : Container(
+                      color: Colors.grey.shade200,
+                      child: const Icon(
+                        Icons.broken_image_outlined,
+                        color: Colors.grey,
+                      ),
+                    ),
             ),
 
             Expanded(

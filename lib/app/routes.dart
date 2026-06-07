@@ -13,6 +13,7 @@ import '../features/admin_panel/presentation/official_verification_screen.dart';
 import '../features/admin_panel/presentation/report_moderation_screen.dart';
 import '../features/admin_panel/presentation/system_analytics_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
+import '../features/profile/presentation/edit_profile_screen.dart';
 
 class _GoRouterRefreshStream extends ChangeNotifier {
   _GoRouterRefreshStream(Stream<dynamic> stream) {
@@ -41,6 +42,7 @@ class AppRoutes {
   static const String adminCategories = '/admin/categories';
   static const String adminAnalytics = '/admin/analytics';
   static const String profile = '/profile';
+  static const String editProfile = '/edit-profile';
 
   static final GoRouter router = GoRouter(
     initialLocation: feed,
@@ -53,7 +55,11 @@ class AppRoutes {
           state.matchedLocation == login || state.matchedLocation == register;
 
       if (!isLoggedIn) return isAuthRoute ? null : login;
-      if (isAuthRoute) return feed;
+      if (isAuthRoute) {
+        final isAdding = state.uri.queryParameters['adding'] == 'true';
+        if (isAdding) return null;
+        return feed;
+      }
       return null;
     },
     routes: [
@@ -106,6 +112,11 @@ class AppRoutes {
         path: profile,
         builder: (BuildContext context, GoRouterState state) =>
             const ProfileScreen(),
+      ),
+      GoRoute(
+        path: editProfile,
+        builder: (BuildContext context, GoRouterState state) =>
+            const EditProfileScreen(),
       ),
       GoRoute(
         path: '/profile/:username',

@@ -69,17 +69,25 @@ class _SupportedReportCard extends StatelessWidget {
                 SizedBox(
                   height: 130,
                   width: double.infinity,
-                  child: Image.network(
-                    report.imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      color: Colors.grey.shade200,
-                      child: const Icon(
-                        Icons.broken_image_outlined,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ),
+                  child: report.imageUrl.isNotEmpty
+                      ? Image.network(
+                          report.imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: Colors.grey.shade200,
+                            child: const Icon(
+                              Icons.broken_image_outlined,
+                              color: Colors.grey,
+                            ),
+                          ),
+                        )
+                      : Container(
+                          color: Colors.grey.shade200,
+                          child: const Icon(
+                            Icons.broken_image_outlined,
+                            color: Colors.grey,
+                          ),
+                        ),
                 ),
                 Positioned(
                   top: 10,
@@ -163,8 +171,21 @@ class _SupportedReportCard extends StatelessWidget {
                     children: [
                       CircleAvatar(
                         radius: 10,
-                        backgroundImage: NetworkImage(report.authorAvatarUrl),
+                        backgroundImage: report.authorAvatarUrl.isNotEmpty
+                            ? NetworkImage(report.authorAvatarUrl)
+                            : null,
                         backgroundColor: Colors.grey.shade200,
+                        child: report.authorAvatarUrl.isEmpty
+                            ? Text(
+                                report.authorName.isNotEmpty
+                                    ? report.authorName[0].toUpperCase()
+                                    : '?',
+                                style: const TextStyle(
+                                  fontSize: 8,
+                                  color: Colors.black54,
+                                ),
+                              )
+                            : null,
                       ),
                       const SizedBox(width: 6),
                       Text(
