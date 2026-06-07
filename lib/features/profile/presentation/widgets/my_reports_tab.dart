@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import '../../domain/models/user_profile.dart';
 import 'profile_theme.dart';
 
-/// Tab 1: Daftar laporan yang pernah dibuat oleh user ini.
-/// Setiap card menampilkan status terkini dengan warna kontras.
 class MyReportsTab extends StatelessWidget {
   final List<UserReport> reports;
 
@@ -15,7 +13,8 @@ class MyReportsTab extends StatelessWidget {
       return const _EmptyState(
         icon: Icons.campaign_outlined,
         title: 'Belum Ada Laporan',
-        subtitle: 'Mulai berkontribusi dengan melaporkan\nmasalah infrastruktur di sekitarmu.',
+        subtitle:
+            'Mulai berkontribusi dengan melaporkan\nmasalah infrastruktur di sekitarmu.',
       );
     }
 
@@ -62,7 +61,6 @@ class _MyReportCard extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Thumbnail Image ────────────────────────────────────────────
             SizedBox(
               width: 100,
               height: 110,
@@ -71,25 +69,27 @@ class _MyReportCard extends StatelessWidget {
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) => Container(
                   color: Colors.grey.shade200,
-                  child: const Icon(Icons.broken_image_outlined,
-                      color: Colors.grey),
+                  child: const Icon(
+                    Icons.broken_image_outlined,
+                    color: Colors.grey,
+                  ),
                 ),
               ),
             ),
 
-            // ── Content ────────────────────────────────────────────────────
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.all(12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Category chip + time
                     Row(
                       children: [
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 3),
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
                           decoration: BoxDecoration(
                             color: catBg,
                             borderRadius: BorderRadius.circular(6),
@@ -116,7 +116,6 @@ class _MyReportCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 6),
 
-                    // Title
                     Text(
                       report.title,
                       style: const TextStyle(
@@ -130,11 +129,13 @@ class _MyReportCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
 
-                    // Bottom row: upvotes + status badge
                     Row(
                       children: [
-                        Icon(Icons.arrow_upward_rounded,
-                            size: 14, color: Colors.grey.shade500),
+                        Icon(
+                          Icons.arrow_upward_rounded,
+                          size: 14,
+                          color: Colors.grey.shade500,
+                        ),
                         const SizedBox(width: 3),
                         Text(
                           '${report.upvotes}',
@@ -146,10 +147,11 @@ class _MyReportCard extends StatelessWidget {
                         ),
                         const Spacer(),
 
-                        // Status badge — element terpenting
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: statusStyle.backgroundColor,
                             borderRadius: BorderRadius.circular(20),
@@ -157,8 +159,11 @@ class _MyReportCard extends StatelessWidget {
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(statusStyle.icon,
-                                  size: 12, color: statusStyle.color),
+                              Icon(
+                                statusStyle.icon,
+                                size: 12,
+                                color: statusStyle.color,
+                              ),
                               const SizedBox(width: 4),
                               Text(
                                 report.status.label,
@@ -184,7 +189,6 @@ class _MyReportCard extends StatelessWidget {
   }
 }
 
-// ── Empty State ───────────────────────────────────────────────────────────────
 class _EmptyState extends StatelessWidget {
   final IconData icon;
   final String title;

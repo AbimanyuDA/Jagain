@@ -9,8 +9,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   StreamSubscription? _authSubscription;
 
   AuthBloc({required AuthRepository repository})
-      : _repository = repository,
-        super(AuthInitial()) {
+    : _repository = repository,
+      super(AuthInitial()) {
     on<AuthCheckRequested>(_onAuthCheckRequested);
     on<AuthLoginRequested>(_onAuthLoginRequested);
     on<AuthRegisterRequested>(_onAuthRegisterRequested);
@@ -56,11 +56,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     try {
       final user = await _repository.register(
+        username: event.username,
         name: event.name,
         email: event.email,
         password: event.password,
         role: event.role,
         wilayah: event.wilayah,
+        address: event.address,
+        phoneNumber: event.phoneNumber,
       );
       emit(AuthAuthenticated(user: user));
     } catch (e) {

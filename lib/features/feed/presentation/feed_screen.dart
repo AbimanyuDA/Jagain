@@ -53,7 +53,6 @@ class _FeedScreenState extends State<FeedScreen> {
         body: IndexedStack(
           index: _currentIndex,
           children: [
-            // Tab 1: Feed (Developer B)
             BlocBuilder<FeedBloc, FeedState>(
               builder: (context, state) {
                 if (state is FeedLoading) {
@@ -72,7 +71,10 @@ class _FeedScreenState extends State<FeedScreen> {
                           snap: true,
                           pinned: false,
                           leading: IconButton(
-                            icon: const Icon(Icons.add, color: Color(0xFF0F1E36)),
+                            icon: const Icon(
+                              Icons.add,
+                              color: Color(0xFF0F1E36),
+                            ),
                             onPressed: () {
                               context.push('/create-report');
                             },
@@ -89,7 +91,10 @@ class _FeedScreenState extends State<FeedScreen> {
                           ),
                           actions: [
                             IconButton(
-                              icon: const Icon(Icons.search, color: Color(0xFF0F1E36)),
+                              icon: const Icon(
+                                Icons.search,
+                                color: Color(0xFF0F1E36),
+                              ),
                               onPressed: () {},
                             ),
                           ],
@@ -97,23 +102,27 @@ class _FeedScreenState extends State<FeedScreen> {
                           elevation: 0.5,
                         ),
                         SliverPadding(
-                          padding: const EdgeInsets.only(top: 8, bottom: 80), // Padding to avoid FAB overlap
+                          padding: const EdgeInsets.only(top: 8, bottom: 80),
                           sliver: SliverList(
-                            delegate: SliverChildBuilderDelegate(
-                              (context, index) {
-                                final post = posts[index];
-                                return PostCard(
-                                  post: post,
-                                  onUpvotePressed: () {
-                                    context.read<FeedBloc>().add(ToggleUpvote(post.id));
-                                  },
-                                  onDownvotePressed: () {
-                                    context.read<FeedBloc>().add(ToggleDownvote(post.id));
-                                  },
-                                );
-                              },
-                              childCount: posts.length,
-                            ),
+                            delegate: SliverChildBuilderDelegate((
+                              context,
+                              index,
+                            ) {
+                              final post = posts[index];
+                              return PostCard(
+                                post: post,
+                                onUpvotePressed: () {
+                                  context.read<FeedBloc>().add(
+                                    ToggleUpvote(post.id),
+                                  );
+                                },
+                                onDownvotePressed: () {
+                                  context.read<FeedBloc>().add(
+                                    ToggleDownvote(post.id),
+                                  );
+                                },
+                              );
+                            }, childCount: posts.length),
                           ),
                         ),
                       ],
@@ -125,24 +134,22 @@ class _FeedScreenState extends State<FeedScreen> {
                 return const Center(child: Text('Memuat Laporan...'));
               },
             ),
-            
-            // Tab 2: Near Me Placeholder (Developer C)
-            const Center(child: Text('Halaman Near Me (Peta Laporan Terdekat)')),
-            
-            // Tab 3: Stats Placeholder (Developer A / C)
+
+            const Center(
+              child: Text('Halaman Near Me (Peta Laporan Terdekat)'),
+            ),
+
             const Center(child: Text('Halaman Statistik & Grafik Laporan')),
-            
-            // Tab 4: Profile Screen (Developer A)
+
             const ProfileScreen(),
           ],
         ),
-        
 
-
-        // Bottom Navigation Bar
         bottomNavigationBar: Container(
           decoration: BoxDecoration(
-            border: Border(top: BorderSide(color: Colors.grey.shade200, width: 1)),
+            border: Border(
+              top: BorderSide(color: Colors.grey.shade200, width: 1),
+            ),
           ),
           child: BottomNavigationBar(
             currentIndex: _currentIndex,
@@ -153,9 +160,12 @@ class _FeedScreenState extends State<FeedScreen> {
             },
             type: BottomNavigationBarType.fixed,
             backgroundColor: Colors.white,
-            selectedItemColor: const Color(0xFFE53935), // Match red selected color in mockup
+            selectedItemColor: const Color(0xFFE53935),
             unselectedItemColor: Colors.grey.shade500,
-            selectedLabelStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+            selectedLabelStyle: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
             unselectedLabelStyle: const TextStyle(fontSize: 12),
             items: const [
               BottomNavigationBarItem(

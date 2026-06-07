@@ -5,7 +5,6 @@ import '../bloc/profile_bloc.dart';
 import '../bloc/profile_event.dart';
 import 'profile_theme.dart';
 
-/// Tab 3: Pencapaian & Reward — badge collection + redeem poin.
 class AchievementsTab extends StatelessWidget {
   final List<Badge> badges;
   final int availablePoints;
@@ -28,10 +27,10 @@ class AchievementsTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Lencana Digital Section ─────────────────────────────────────
           _SectionHeader(
             title: 'Koleksi Lencana',
-            subtitle: '${badges.where((b) => b.isUnlocked).length}/${badges.length} terbuka',
+            subtitle:
+                '${badges.where((b) => b.isUnlocked).length}/${badges.length} terbuka',
           ),
           const SizedBox(height: 12),
 
@@ -52,14 +51,9 @@ class AchievementsTab extends StatelessWidget {
 
           if (isOwnProfile) ...[
             const SizedBox(height: 28),
-            // ── Tukar Poin Section ──────────────────────────────────────────
-            _SectionHeader(
-              title: 'Tukar Poin Kontribusi',
-              subtitle: null,
-            ),
+            _SectionHeader(title: 'Tukar Poin Kontribusi', subtitle: null),
             const SizedBox(height: 6),
 
-            // Points balance chip
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
@@ -71,8 +65,11 @@ class AchievementsTab extends StatelessWidget {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.stars_rounded,
-                      color: Colors.white, size: 18),
+                  const Icon(
+                    Icons.stars_rounded,
+                    color: Colors.white,
+                    size: 18,
+                  ),
                   const SizedBox(width: 6),
                   Text(
                     '${formatNumber(availablePoints)} poin tersedia',
@@ -87,19 +84,18 @@ class AchievementsTab extends StatelessWidget {
             ),
             const SizedBox(height: 14),
 
-            // Reward list
-            ...rewards.map((reward) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _RewardCard(
-                    reward: reward,
-                    availablePoints: availablePoints,
-                    onRedeem: () {
-                      context
-                          .read<ProfileBloc>()
-                          .add(RedeemPoints(reward.id));
-                    },
-                  ),
-                )),
+            ...rewards.map(
+              (reward) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _RewardCard(
+                  reward: reward,
+                  availablePoints: availablePoints,
+                  onRedeem: () {
+                    context.read<ProfileBloc>().add(RedeemPoints(reward.id));
+                  },
+                ),
+              ),
+            ),
           ],
         ],
       ),
@@ -107,7 +103,6 @@ class AchievementsTab extends StatelessWidget {
   }
 }
 
-// ── Badge Card ────────────────────────────────────────────────────────────────
 class _BadgeCard extends StatelessWidget {
   final Badge badge;
 
@@ -136,14 +131,13 @@ class _BadgeCard extends StatelessWidget {
                     color: rarityColor.withAlpha(38),
                     blurRadius: 10,
                     offset: const Offset(0, 3),
-                  )
+                  ),
                 ]
               : [],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Icon in gradient circle
             Container(
               width: 52,
               height: 52,
@@ -157,17 +151,16 @@ class _BadgeCard extends StatelessWidget {
               ),
               child: Center(
                 child: badge.isUnlocked
-                    ? Text(
-                        badge.icon,
-                        style: const TextStyle(fontSize: 26),
-                      )
-                    : const Icon(Icons.lock_rounded,
-                        color: Colors.white, size: 22),
+                    ? Text(badge.icon, style: const TextStyle(fontSize: 26))
+                    : const Icon(
+                        Icons.lock_rounded,
+                        color: Colors.white,
+                        size: 22,
+                      ),
               ),
             ),
             const SizedBox(height: 8),
 
-            // Badge name
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 6),
               child: Text(
@@ -186,10 +179,8 @@ class _BadgeCard extends StatelessWidget {
             ),
             const SizedBox(height: 4),
 
-            // Rarity label
             Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
                 color: rarityColor.withAlpha(26),
                 borderRadius: BorderRadius.circular(4),
@@ -211,7 +202,6 @@ class _BadgeCard extends StatelessWidget {
   }
 }
 
-// ── Reward Card ───────────────────────────────────────────────────────────────
 class _RewardCard extends StatelessWidget {
   final RedeemReward reward;
   final int availablePoints;
@@ -244,7 +234,6 @@ class _RewardCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Icon bubble
           Container(
             width: 50,
             height: 50,
@@ -255,15 +244,11 @@ class _RewardCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Center(
-              child: Text(
-                reward.icon,
-                style: const TextStyle(fontSize: 24),
-              ),
+              child: Text(reward.icon, style: const TextStyle(fontSize: 24)),
             ),
           ),
           const SizedBox(width: 12),
 
-          // Info
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -289,8 +274,11 @@ class _RewardCard extends StatelessWidget {
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    const Icon(Icons.stars_rounded,
-                        size: 14, color: Color(0xFFFFB300)),
+                    const Icon(
+                      Icons.stars_rounded,
+                      size: 14,
+                      color: Color(0xFFFFB300),
+                    ),
                     const SizedBox(width: 3),
                     Text(
                       '${formatNumber(reward.pointsCost)} poin',
@@ -309,7 +297,6 @@ class _RewardCard extends StatelessWidget {
           ),
           const SizedBox(width: 8),
 
-          // Redeem button
           SizedBox(
             height: 36,
             child: ElevatedButton(
@@ -318,8 +305,9 @@ class _RewardCard extends StatelessWidget {
                 backgroundColor: isAvailable
                     ? ProfileColors.primary
                     : Colors.grey.shade200,
-                foregroundColor:
-                    isAvailable ? Colors.white : Colors.grey.shade400,
+                foregroundColor: isAvailable
+                    ? Colors.white
+                    : Colors.grey.shade400,
                 elevation: 0,
                 padding: const EdgeInsets.symmetric(horizontal: 14),
                 shape: RoundedRectangleBorder(
@@ -343,7 +331,6 @@ class _RewardCard extends StatelessWidget {
   }
 }
 
-// ── Section Header ────────────────────────────────────────────────────────────
 class _SectionHeader extends StatelessWidget {
   final String title;
   final String? subtitle;

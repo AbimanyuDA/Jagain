@@ -1,9 +1,14 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../auth/domain/user_model.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
+import '../../data/comment_repository.dart';
+import '../../domain/models/comment.dart';
 import '../../domain/models/report_post.dart';
 
-/// PostCard — menampilkan detail postingan warga.
-/// Mendukung multi-image carousel (slide seperti Instagram) jika data memiliki multiple images.
 class PostCard extends StatefulWidget {
   final ReportPost post;
   final VoidCallback onUpvotePressed;
@@ -34,7 +39,6 @@ class _PostCardState extends State<PostCard> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Header: User Info (Padded) ──────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
             child: Row(
@@ -50,7 +54,9 @@ class _PostCardState extends State<PostCard> {
                         CircleAvatar(
                           radius: 20,
                           backgroundColor: Colors.grey.shade200,
-                          backgroundImage: NetworkImage(widget.post.userAvatarUrl),
+                          backgroundImage: NetworkImage(
+                            widget.post.userAvatarUrl,
+                          ),
                           child: const Icon(Icons.person, color: Colors.grey),
                         ),
                         const SizedBox(width: 12),
@@ -114,12 +120,12 @@ class _PostCardState extends State<PostCard> {
             ),
           ),
 
-          // ── Post Image (Edge-to-Edge, Aspect Ratio 4:5) ──────────────────
           AspectRatio(
             aspectRatio: 4 / 5,
             child: Stack(
               children: [
-                if (widget.post.imageUrls != null && widget.post.imageUrls!.length > 1)
+                if (widget.post.imageUrls != null &&
+                    widget.post.imageUrls!.length > 1)
                   PageView.builder(
                     itemCount: widget.post.imageUrls!.length,
                     onPageChanged: (index) {
@@ -136,7 +142,11 @@ class _PostCardState extends State<PostCard> {
                         errorBuilder: (context, error, stackTrace) => Container(
                           color: Colors.grey.shade200,
                           child: const Center(
-                            child: Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                            child: Icon(
+                              Icons.broken_image,
+                              size: 50,
+                              color: Colors.grey,
+                            ),
                           ),
                         ),
                       );
@@ -151,19 +161,27 @@ class _PostCardState extends State<PostCard> {
                     errorBuilder: (context, error, stackTrace) => Container(
                       color: Colors.grey.shade200,
                       child: const Center(
-                        child: Icon(Icons.broken_image, size: 50, color: Colors.grey),
+                        child: Icon(
+                          Icons.broken_image,
+                          size: 50,
+                          color: Colors.grey,
+                        ),
                       ),
                     ),
                   ),
 
-                // Category & Urgency Tag Overlay
                 Positioned(
                   top: 12,
                   right: 12,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
-                      color: isUrgent ? const Color(0xFFD32F2F) : const Color(0xFF2E5BFF),
+                      color: isUrgent
+                          ? const Color(0xFFD32F2F)
+                          : const Color(0xFF2E5BFF),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -178,8 +196,8 @@ class _PostCardState extends State<PostCard> {
                   ),
                 ),
 
-                // Carousel Dots Indicator (Only if multiple images)
-                if (widget.post.imageUrls != null && widget.post.imageUrls!.length > 1)
+                if (widget.post.imageUrls != null &&
+                    widget.post.imageUrls!.length > 1)
                   Positioned(
                     bottom: 12,
                     left: 0,
@@ -203,7 +221,7 @@ class _PostCardState extends State<PostCard> {
                                 color: Colors.black.withAlpha(26),
                                 blurRadius: 1,
                                 offset: const Offset(0, 0.5),
-                              )
+                              ),
                             ],
                           ),
                         ),
@@ -214,17 +232,14 @@ class _PostCardState extends State<PostCard> {
             ),
           ),
 
-          // ── Actions & Text content below image (Padded) ──────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Actions: Vote, Updates, Replies
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Upvote & Downvote Capsule
                     Container(
                       decoration: BoxDecoration(
                         color: const Color(0xFFF0F4FF),
@@ -237,11 +252,16 @@ class _PostCardState extends State<PostCard> {
                             icon: Icon(
                               Icons.arrow_upward,
                               size: 20,
-                              color: widget.post.isUpvoted ? theme.colorScheme.primary : Colors.black87,
+                              color: widget.post.isUpvoted
+                                  ? theme.colorScheme.primary
+                                  : Colors.black87,
                             ),
                             onPressed: widget.onUpvotePressed,
                             constraints: const BoxConstraints(),
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            ),
                           ),
                           Text(
                             '${widget.post.upvotes}',
@@ -257,27 +277,38 @@ class _PostCardState extends State<PostCard> {
                             icon: Icon(
                               Icons.arrow_downward,
                               size: 20,
-                              color: widget.post.isDownvoted ? Colors.red : Colors.black87,
+                              color: widget.post.isDownvoted
+                                  ? Colors.red
+                                  : Colors.black87,
                             ),
                             onPressed: widget.onDownvotePressed,
                             constraints: const BoxConstraints(),
-                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 8,
+                            ),
                           ),
                         ],
                       ),
                     ),
 
-                    // Updates Indicator
                     Flexible(
                       child: InkWell(
                         onTap: () {},
                         borderRadius: BorderRadius.circular(8),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 4,
+                          ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.build_circle_outlined, size: 18, color: Colors.black54),
+                              const Icon(
+                                Icons.build_circle_outlined,
+                                size: 18,
+                                color: Colors.black54,
+                              ),
                               const SizedBox(width: 4),
                               Flexible(
                                 child: Text(
@@ -296,17 +327,23 @@ class _PostCardState extends State<PostCard> {
                       ),
                     ),
 
-                    // Replies Indicator
                     Flexible(
                       child: InkWell(
                         onTap: () => _showCommentBottomSheet(context),
                         borderRadius: BorderRadius.circular(8),
                         child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 4,
+                          ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(Icons.chat_bubble_outline, size: 18, color: Colors.black54),
+                              const Icon(
+                                Icons.chat_bubble_outline,
+                                size: 18,
+                                color: Colors.black54,
+                              ),
                               const SizedBox(width: 4),
                               Flexible(
                                 child: Text(
@@ -328,18 +365,16 @@ class _PostCardState extends State<PostCard> {
                 ),
                 const SizedBox(height: 14),
 
-                // Post Title
                 Text(
                   widget.post.title,
                   style: const TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F1E36), // Deep Navy text color
+                    color: Color(0xFF0F1E36),
                   ),
                 ),
                 const SizedBox(height: 6),
 
-                // Post Description
                 Text(
                   widget.post.description,
                   style: TextStyle(
@@ -359,7 +394,7 @@ class _PostCardState extends State<PostCard> {
   void _showCommentBottomSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true, // Keyboard pushes bottom sheet
+      isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
@@ -371,7 +406,6 @@ class _PostCardState extends State<PostCard> {
   }
 }
 
-// ── Comment Sheet Component ──────────────────────────────────────────────────
 class _CommentSheetContent extends StatefulWidget {
   final ReportPost post;
   const _CommentSheetContent({required this.post});
@@ -382,69 +416,18 @@ class _CommentSheetContent extends StatefulWidget {
 
 class _CommentSheetContentState extends State<_CommentSheetContent> {
   final TextEditingController _commentController = TextEditingController();
-  
-  // Model data komentar yang presisi sesuai dengan screenshot referensi
-  final List<Map<String, dynamic>> _mockComments = [
-    {
-      'username': 'gabrielrey99',
-      'avatarUrl': 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
-      'comment': 'lhsg senin gimana nih',
-      'timeAgo': '1 hari',
-      'likeCount': 163,
-      'isVerified': true,
-      'isLiked': false,
-      'hasReplies': true,
-    },
-    {
-      'username': 'widhi.sudariani',
-      'avatarUrl': 'https://images.unsplash.com/photo-1580489944761-15a19d654956?w=150',
-      'comment': 'Kereen 🔥',
-      'timeAgo': '1 hari',
-      'likeCount': 1,
-      'isVerified': false,
-      'isLiked': false,
-    },
-    {
-      'username': 'rifans.official',
-      'avatarUrl': 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150',
-      'comment': 'Ku kira 19 jt lapangan ternyata 19 rupiah di depan 😢 Keren banget pak 🥲👏 @prabowo',
-      'timeAgo': '21 jam',
-      'likeCount': 1,
-      'isVerified': false,
-      'isLiked': false,
-      'showTranslation': true,
-    },
-    {
-      'username': 'gthaannnn',
-      'avatarUrl': 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150',
-      'comment': 'wkwkwk',
-      'timeAgo': '1 hari',
-      'likeCount': 1,
-      'isVerified': false,
-      'isLiked': false,
-    },
-    {
-      'username': 'mhzulkrnn',
-      'avatarUrl': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150',
-      'comment': '@prabowo @pur.bayayudisadewa',
-      'timeAgo': '1 hari',
-      'likeCount': 3,
-      'isVerified': false,
-      'isLiked': false,
-    },
-    {
-      'username': 'zaidanilhami',
-      'avatarUrl': 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150',
-      'comment': 'Apakah prediksi Noel untuk bulan Juni - Juli beneran terjadi? 😢😂',
-      'timeAgo': '1 hari',
-      'likeCount': 76,
-      'isVerified': false,
-      'isLiked': false,
-    },
-  ];
+
+  final CommentRepository _repository = CommentRepository();
 
   static const List<String> _quickEmojis = [
-    '❤️', '🙌', '🔥', '👏', '😢', '😍', '😮', '😂'
+    '❤️',
+    '🙌',
+    '🔥',
+    '👏',
+    '😢',
+    '😍',
+    '😮',
+    '😂',
   ];
 
   @override
@@ -453,48 +436,34 @@ class _CommentSheetContentState extends State<_CommentSheetContent> {
     super.dispose();
   }
 
-  void _submitComment() {
+  void _submitComment(UserModel? author) {
     final text = _commentController.text.trim();
-    if (text.isEmpty) return;
+    if (text.isEmpty || author == null) return;
 
-    setState(() {
-      _mockComments.insert(0, {
-        'username': 'budisantoso_jkt',
-        'avatarUrl': 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300',
-        'comment': text,
-        'timeAgo': 'Baru saja',
-        'likeCount': 0,
-        'isVerified': true,
-        'isLiked': false,
-      });
-      _commentController.clear();
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Komentar berhasil diposting!'),
-        duration: Duration(seconds: 1),
-        behavior: SnackBarBehavior.floating,
-      ),
+    _commentController.clear();
+    setState(() {});
+    _repository.addComment(
+      reportId: widget.post.id,
+      author: author,
+      text: text,
     );
   }
 
-  void _toggleLikeComment(int index) {
-    setState(() {
-      final comment = _mockComments[index];
-      final isLiked = comment['isLiked'] as bool;
-      comment['isLiked'] = !isLiked;
-      int likeCount = comment['likeCount'] as int;
-      if (!isLiked) {
-        comment['likeCount'] = likeCount + 1;
-      } else {
-        comment['likeCount'] = likeCount - 1;
-      }
-    });
+  void _toggleLike(Comment comment, String? userId) {
+    if (userId == null) return;
+    _repository.toggleLike(
+      reportId: widget.post.id,
+      commentId: comment.id,
+      userId: userId,
+    );
   }
 
   @override
   Widget build(BuildContext context) {
+    final authState = context.watch<AuthBloc>().state;
+    final currentUser = authState is AuthAuthenticated ? authState.user : null;
+    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
+
     return Container(
       constraints: BoxConstraints(
         maxHeight: MediaQuery.of(context).size.height * 0.85,
@@ -505,7 +474,6 @@ class _CommentSheetContentState extends State<_CommentSheetContent> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Drag handle
           const SizedBox(height: 10),
           Container(
             width: 40,
@@ -517,13 +485,12 @@ class _CommentSheetContentState extends State<_CommentSheetContent> {
           ),
           const SizedBox(height: 10),
 
-          // Header: Centered title + direct plane icon
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
-              children: [
-                const SizedBox(width: 40), // Balance the send button
-                const Expanded(
+              children: const [
+                SizedBox(width: 40),
+                Expanded(
                   child: Center(
                     child: Text(
                       'Komentar',
@@ -535,192 +502,163 @@ class _CommentSheetContentState extends State<_CommentSheetContent> {
                     ),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.near_me_outlined, color: Colors.black87, size: 22),
-                  onPressed: () {},
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
+                SizedBox(width: 40),
               ],
             ),
           ),
           const SizedBox(height: 8),
 
-          // Comments List
           Expanded(
-            child: _mockComments.isEmpty
-                ? const Center(
+            child: StreamBuilder<List<Comment>>(
+              stream: _repository.watchComments(widget.post.id),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                final comments = snapshot.data ?? const [];
+                if (comments.isEmpty) {
+                  return const Center(
                     child: Text(
                       'Belum ada komentar. Jadilah yang pertama!',
                       style: TextStyle(color: Colors.grey),
                     ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    itemCount: _mockComments.length,
-                    itemBuilder: (context, index) {
-                      final item = _mockComments[index];
-                      final isLiked = item['isLiked'] as bool;
+                  );
+                }
 
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 20),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            CircleAvatar(
-                              radius: 16, // Diperkecil agar lebih ramping
-                              backgroundImage: NetworkImage(item['avatarUrl']!),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  // Baris 1: Username + verified + time ago
-                                  Row(
-                                    crossAxisAlignment: CrossAxisAlignment.center,
-                                    children: [
-                                      Text(
-                                        item['username']!,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.w600, // Semi-bold khas IG
-                                          fontSize: 13,
-                                          color: Colors.black87,
-                                        ),
+                return ListView.builder(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
+                  itemCount: comments.length,
+                  itemBuilder: (context, index) {
+                    final comment = comments[index];
+                    final isLiked = comment.isLikedBy(currentUserId);
+
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 20),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CircleAvatar(
+                            radius: 16,
+                            backgroundColor: Colors.grey.shade300,
+                            backgroundImage: comment.authorAvatarUrl.isNotEmpty
+                                ? NetworkImage(comment.authorAvatarUrl)
+                                : null,
+                            child: comment.authorAvatarUrl.isEmpty
+                                ? Text(
+                                    comment.authorUsername.isNotEmpty
+                                        ? comment.authorUsername[0]
+                                              .toUpperCase()
+                                        : '?',
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.black54,
+                                    ),
+                                  )
+                                : null,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      comment.authorUsername,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 13,
+                                        color: Colors.black87,
                                       ),
-                                      if (item['isVerified'] as bool) ...[
-                                        const SizedBox(width: 4),
-                                        const Icon(
-                                          Icons.verified_rounded,
-                                          color: Color(0xFF2E5BFF),
-                                          size: 13,
-                                        ),
-                                      ],
-                                      const SizedBox(width: 8),
+                                    ),
+                                    if (comment.isOfficial) ...[
+                                      const SizedBox(width: 4),
+                                      const Icon(
+                                        Icons.verified_rounded,
+                                        color: Color(0xFF2E5BFF),
+                                        size: 13,
+                                      ),
+                                    ],
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      comment.timeAgo,
+                                      style: TextStyle(
+                                        color: Colors.grey.shade500,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    if (comment.isPinned) ...[
+                                      const SizedBox(width: 6),
                                       Text(
-                                        item['timeAgo']!,
+                                        '•  Disematkan',
                                         style: TextStyle(
                                           color: Colors.grey.shade500,
                                           fontSize: 12,
                                         ),
                                       ),
-                                      if (item['showTranslation'] == true) ...[
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          '•  Diedit',
-                                          style: TextStyle(
-                                            color: Colors.grey.shade500,
-                                            fontSize: 12,
-                                          ),
-                                        ),
-                                      ],
                                     ],
+                                  ],
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  comment.text,
+                                  style: const TextStyle(
+                                    fontSize: 13.5,
+                                    color: Colors.black87,
+                                    height: 1.35,
                                   ),
-                                  const SizedBox(height: 3),
-                                  // Baris 2: Comment text
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 2),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                GestureDetector(
+                                  onTap: () =>
+                                      _toggleLike(comment, currentUserId),
+                                  child: Icon(
+                                    isLiked
+                                        ? Icons.favorite
+                                        : Icons.favorite_border_rounded,
+                                    size: 14,
+                                    color: isLiked
+                                        ? Colors.red
+                                        : Colors.grey.shade400,
+                                  ),
+                                ),
+                                if (comment.likeCount > 0) ...[
+                                  const SizedBox(height: 2),
                                   Text(
-                                    item['comment']!,
-                                    style: const TextStyle(
-                                      fontSize: 13.5,
-                                      color: Colors.black87,
-                                      height: 1.35,
+                                    '${comment.likeCount}',
+                                    style: TextStyle(
+                                      color: Colors.grey.shade500,
+                                      fontSize: 10,
                                     ),
                                   ),
-                                  const SizedBox(height: 6),
-                                  // Baris 3: Balas & Lihat Terjemahan
-                                  Row(
-                                    children: [
-                                      GestureDetector(
-                                        onTap: () {},
-                                        child: Text(
-                                          'Balas',
-                                          style: TextStyle(
-                                            color: Colors.grey.shade500,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                      if (item['showTranslation'] == true) ...[
-                                        const SizedBox(width: 12),
-                                        GestureDetector(
-                                          onTap: () {},
-                                          child: Text(
-                                            'Lihat terjemahan',
-                                            style: TextStyle(
-                                              color: Colors.grey.shade500,
-                                              fontSize: 11,
-                                              fontWeight: FontWeight.w600,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                  
-                                  // Balasan Bersarang (Lihat 36 balasan lainnya)
-                                  if (item['hasReplies'] == true) ...[
-                                    const SizedBox(height: 12),
-                                    Row(
-                                      children: [
-                                        Container(
-                                          width: 24,
-                                          height: 1,
-                                          color: Colors.grey.shade300,
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Text(
-                                          'Lihat 36 balasan lainnya',
-                                          style: TextStyle(
-                                            color: Colors.grey.shade500,
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
                                 ],
-                              ),
+                              ],
                             ),
-                            const SizedBox(width: 8),
-                            // Bagian Kanan: Tombol Love + Jumlah Like (di-center vertikal kecil)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 2),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  GestureDetector(
-                                    onTap: () => _toggleLikeComment(index),
-                                    child: Icon(
-                                      isLiked ? Icons.favorite : Icons.favorite_border_rounded,
-                                      size: 14,
-                                      color: isLiked ? Colors.red : Colors.grey.shade400,
-                                    ),
-                                  ),
-                                  if (item['likeCount'] as int > 0) ...[
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      '${item['likeCount']}',
-                                      style: TextStyle(
-                                        color: Colors.grey.shade500,
-                                        fontSize: 10,
-                                      ),
-                                    ),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
           ),
 
           Divider(height: 1, color: Colors.grey.shade200, thickness: 0.5),
 
-          // Quick Emoji Bar
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             color: Colors.white,
@@ -733,26 +671,34 @@ class _CommentSheetContentState extends State<_CommentSheetContent> {
                       _commentController.text += emoji;
                     });
                   },
-                  child: Text(
-                    emoji,
-                    style: const TextStyle(fontSize: 22),
-                  ),
+                  child: Text(emoji, style: const TextStyle(fontSize: 22)),
                 );
               }).toList(),
             ),
           ),
 
-          // Input Bar
           Container(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
             color: Colors.white,
             child: Row(
               children: [
-                const CircleAvatar(
-                  radius: 16, // Radius disamakan (32px diameter) agar profesional
-                  backgroundImage: NetworkImage(
-                    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300', // Budi avatar
-                  ),
+                CircleAvatar(
+                  radius: 16,
+                  backgroundColor: Colors.grey.shade300,
+                  backgroundImage: (currentUser?.avatarUrl.isNotEmpty ?? false)
+                      ? NetworkImage(currentUser!.avatarUrl)
+                      : null,
+                  child: (currentUser?.avatarUrl.isEmpty ?? true)
+                      ? Text(
+                          (currentUser?.name.isNotEmpty ?? false)
+                              ? currentUser!.name[0].toUpperCase()
+                              : '?',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.black54,
+                          ),
+                        )
+                      : null,
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -781,10 +727,12 @@ class _CommentSheetContentState extends State<_CommentSheetContent> {
                               disabledBorder: InputBorder.none,
                               focusedErrorBorder: InputBorder.none,
                               isDense: true,
-                              contentPadding: EdgeInsets.symmetric(vertical: 10),
+                              contentPadding: EdgeInsets.symmetric(
+                                vertical: 10,
+                              ),
                             ),
                             textInputAction: TextInputAction.send,
-                            onSubmitted: (_) => _submitComment(),
+                            onSubmitted: (_) => _submitComment(currentUser),
                           ),
                         ),
                         if (_commentController.text.trim().isEmpty)
@@ -795,7 +743,7 @@ class _CommentSheetContentState extends State<_CommentSheetContent> {
                           )
                         else
                           GestureDetector(
-                            onTap: _submitComment,
+                            onTap: () => _submitComment(currentUser),
                             child: const Text(
                               'Kirim',
                               style: TextStyle(

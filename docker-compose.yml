@@ -1,0 +1,39 @@
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: jagain-minio
+    restart: unless-stopped
+    ports:
+      - "9000:9000" # S3 API — dipakai MinioStorageService (lib/core/storage/minio_storage_service.dart)
+      - "9001:9001" # Web console — buka http://localhost:9001 untuk lihat isi bucket
+    environment:
+      MINIO_ROOT_USER: jagain_dev
+      MINIO_ROOT_PASSWORD: jagain_dev_2026
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Setup sekali-jalan: buat bucket "jagain-reports" & set policy public-read,
+  # supaya Image.network(url) di app bisa langsung load foto tanpa presigned URL
+  # (sama seperti asumsi MinioStorageService untuk server produksi).
+  minio-init:
+    image: minio/mc:latest
+    container_name: jagain-minio-init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 jagain_dev jagain_dev_2026 &&
+      mc mb --ignore-existing local/jagain-reports &&
+      mc anonymous set download local/jagain-reports &&
+      echo 'Bucket jagain-reports siap (public-read).'
+      "
+
+volumes:
+  minio-data:

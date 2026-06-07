@@ -1,14 +1,11 @@
-// Domain model for User Profile feature
-// Handles credibility, gamification, and civic contribution data
-
 class UserProfile {
   final String id;
-  final String username;       // e.g. 'abimanyudans' (no spaces)
-  final String displayName;   // e.g. 'Budi Santoso'
+  final String username;
+  final String displayName;
   final String avatarUrl;
   final String domicile;
-  final bool isVerifiedCitizen; // NIK verified
-  final String gamificationTitle; // e.g. "Pahlawan Aspal"
+  final bool isVerifiedCitizen;
+  final String gamificationTitle;
   final int civicPoints;
   final int reportsSolved;
   final int upvotesGiven;
@@ -19,6 +16,7 @@ class UserProfile {
   final List<SupportedReport> supportedReports;
   final List<Badge> badges;
   final int availablePointsForRedeem;
+  final bool isFollowing;
 
   const UserProfile({
     required this.id,
@@ -38,16 +36,39 @@ class UserProfile {
     required this.supportedReports,
     required this.badges,
     required this.availablePointsForRedeem,
+    this.isFollowing = false,
   });
+
+  UserProfile copyWith({
+    int? followersCount,
+    int? availablePointsForRedeem,
+    bool? isFollowing,
+  }) {
+    return UserProfile(
+      id: id,
+      username: username,
+      displayName: displayName,
+      avatarUrl: avatarUrl,
+      domicile: domicile,
+      isVerifiedCitizen: isVerifiedCitizen,
+      gamificationTitle: gamificationTitle,
+      civicPoints: civicPoints,
+      reportsSolved: reportsSolved,
+      upvotesGiven: upvotesGiven,
+      totalReports: totalReports,
+      followersCount: followersCount ?? this.followersCount,
+      followingCount: followingCount,
+      myReports: myReports,
+      supportedReports: supportedReports,
+      badges: badges,
+      availablePointsForRedeem:
+          availablePointsForRedeem ?? this.availablePointsForRedeem,
+      isFollowing: isFollowing ?? this.isFollowing,
+    );
+  }
 }
 
-// Status laporan yang jelas dan bertingkat
-enum ReportStatus {
-  waitingReview,
-  inProgress,
-  solved,
-  rejected,
-}
+enum ReportStatus { waitingReview, inProgress, solved, rejected }
 
 extension ReportStatusExtension on ReportStatus {
   String get label {
@@ -94,7 +115,7 @@ class SupportedReport {
   final String timeAgo;
   final int upvotes;
   final ReportStatus status;
-  final bool isSaved; // bookmarked vs upvoted
+  final bool isSaved;
 
   const SupportedReport({
     required this.id,
@@ -110,12 +131,11 @@ class SupportedReport {
   });
 }
 
-// Gamification Badges
 class Badge {
   final String id;
   final String name;
   final String description;
-  final String icon; // emoji or asset path
+  final String icon;
   final BadgeRarity rarity;
   final bool isUnlocked;
   final String? unlockedAt;
@@ -148,7 +168,6 @@ extension BadgeRarityExtension on BadgeRarity {
   }
 }
 
-// Reward/Insentif digital yang bisa ditukar poin
 class RedeemReward {
   final String id;
   final String name;
