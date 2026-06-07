@@ -7,7 +7,6 @@ import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/register_screen.dart';
 import '../features/feed/presentation/feed_screen.dart';
 import '../features/report_creation/presentation/create_report_screen.dart';
-import '../features/pejabat_dashboard/presentation/pejabat_dashboard_screen.dart';
 import '../features/admin_panel/presentation/admin_dashboard_screen.dart';
 import '../features/admin_panel/presentation/category_management_screen.dart';
 import '../features/admin_panel/presentation/official_verification_screen.dart';
@@ -77,11 +76,6 @@ class AppRoutes {
         path: createReport,
         builder: (BuildContext context, GoRouterState state) =>
             const CreateReportScreen(),
-      ),
-      GoRoute(
-        path: pejabatDashboard,
-        builder: (BuildContext context, GoRouterState state) =>
-            const PejabatDashboardScreen(),
       ),
       GoRoute(
         path: adminDashboard,
