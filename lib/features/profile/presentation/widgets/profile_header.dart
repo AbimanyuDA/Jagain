@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../app/routes.dart';
 import '../../domain/models/user_profile.dart';
 import '../bloc/profile_bloc.dart';
 import '../bloc/profile_event.dart';
@@ -92,7 +94,21 @@ class ProfileHeader extends StatelessWidget {
                   child: CircleAvatar(
                     radius: 32,
                     backgroundColor: Colors.grey.shade100,
-                    backgroundImage: NetworkImage(profile.avatarUrl),
+                    backgroundImage: profile.avatarUrl.isNotEmpty
+                        ? NetworkImage(profile.avatarUrl)
+                        : null,
+                    child: profile.avatarUrl.isEmpty
+                        ? Text(
+                            profile.displayName.isNotEmpty
+                                ? profile.displayName[0].toUpperCase()
+                                : '?',
+                            style: const TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black54,
+                            ),
+                          )
+                        : null,
                   ),
                 ),
                 if (profile.isVerifiedCitizen)
@@ -226,7 +242,14 @@ class ProfileHeader extends StatelessWidget {
                 width: double.infinity,
                 height: 30,
                 child: OutlinedButton(
-                  onPressed: () {},
+                  onPressed: () async {
+                    final updated = await context.push<bool>(
+                      AppRoutes.editProfile,
+                    );
+                    if (updated == true && context.mounted) {
+                      context.read<ProfileBloc>().add(const LoadProfile());
+                    }
+                  },
                   style: OutlinedButton.styleFrom(
                     side: BorderSide(color: Colors.grey.shade300, width: 1),
                     foregroundColor: const Color(0xFF0F1E36),

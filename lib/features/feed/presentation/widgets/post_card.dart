@@ -33,6 +33,26 @@ class _PostCardState extends State<PostCard> {
     final theme = Theme.of(context);
     final isUrgent = widget.post.urgency == 'URGENT';
 
+    final authState = context.watch<AuthBloc>().state;
+    final currentUser = authState is AuthAuthenticated ? authState.user : null;
+    final isCurrentUser = currentUser != null && currentUser.uid == widget.post.authorId;
+
+    final displayUserName = isCurrentUser ? currentUser.username : widget.post.userName;
+    final displayUserAvatar = isCurrentUser ? currentUser.avatarUrl : widget.post.userAvatarUrl;
+
+    String displayUserBadge = widget.post.userBadge;
+    if (isCurrentUser) {
+      if (currentUser.role == UserRole.official) {
+        displayUserBadge = 'Pejabat';
+      } else if (currentUser.role == UserRole.admin) {
+        displayUserBadge = 'Admin';
+      } else if (currentUser.isVerified) {
+        displayUserBadge = 'Verified';
+      } else {
+        displayUserBadge = 'Citizen Reporter';
+      }
+    }
+
     return Container(
       color: Colors.white,
       margin: const EdgeInsets.only(bottom: 12),
@@ -47,17 +67,19 @@ class _PostCardState extends State<PostCard> {
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
                     onTap: () {
-                      context.push('/profile/${widget.post.userName}');
+                      context.push('/profile/$displayUserName');
                     },
                     child: Row(
                       children: [
                         CircleAvatar(
                           radius: 20,
                           backgroundColor: Colors.grey.shade200,
-                          backgroundImage: NetworkImage(
-                            widget.post.userAvatarUrl,
-                          ),
-                          child: const Icon(Icons.person, color: Colors.grey),
+                          backgroundImage: displayUserAvatar.isNotEmpty
+                              ? NetworkImage(displayUserAvatar)
+                              : null,
+                          child: displayUserAvatar.isEmpty
+                              ? const Icon(Icons.person, color: Colors.grey)
+                              : null,
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -65,7 +87,7 @@ class _PostCardState extends State<PostCard> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                widget.post.userName,
+                                displayUserName,
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 15,
@@ -92,11 +114,11 @@ class _PostCardState extends State<PostCard> {
                                   ),
                                   const SizedBox(width: 4),
                                   Text(
-                                    widget.post.userBadge,
+                                    displayUserBadge,
                                     style: TextStyle(
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
-                                      color: widget.post.userBadge == 'Verified'
+                                      color: displayUserBadge == 'Verified'
                                           ? Colors.green.shade700
                                           : Colors.blue.shade700,
                                     ),
@@ -134,12 +156,54 @@ class _PostCardState extends State<PostCard> {
                       });
                     },
                     itemBuilder: (context, index) {
-                      return Image.network(
-                        widget.post.imageUrls![index],
-                        width: double.infinity,
-                        height: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
+                      return widget.post.imageUrls![index].isNotEmpty
+                          ? Image.network(
+                              widget.post.imageUrls![index],
+                              width: double.infinity,
+                              height: double.infinity,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => Container(
+                                color: Colors.grey.shade200,
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.broken_image,
+                                    size: 50,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ),
+                            )
+                          : Container(
+                              color: Colors.grey.shade200,
+                              child: const Center(
+                                child: Icon(
+                                  Icons.broken_image,
+                                  size: 50,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            );
+                    },
+                  )
+                else
+                  widget.post.imageUrl.isNotEmpty
+                      ? Image.network(
+                          widget.post.imageUrl,
+                          width: double.infinity,
+                          height: double.infinity,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(
+                            color: Colors.grey.shade200,
+                            child: const Center(
+                              child: Icon(
+                                Icons.broken_image,
+                                size: 50,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ),
+                        )
+                      : Container(
                           color: Colors.grey.shade200,
                           child: const Center(
                             child: Icon(
@@ -149,26 +213,6 @@ class _PostCardState extends State<PostCard> {
                             ),
                           ),
                         ),
-                      );
-                    },
-                  )
-                else
-                  Image.network(
-                    widget.post.imageUrl,
-                    width: double.infinity,
-                    height: double.infinity,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      color: Colors.grey.shade200,
-                      child: const Center(
-                        child: Icon(
-                          Icons.broken_image,
-                          size: 50,
-                          color: Colors.grey,
-                        ),
-                      ),
-                    ),
-                  ),
 
                 Positioned(
                   top: 12,
@@ -535,6 +579,10 @@ class _CommentSheetContentState extends State<_CommentSheetContent> {
                   itemBuilder: (context, index) {
                     final comment = comments[index];
                     final isLiked = comment.isLikedBy(currentUserId);
+                    final isCommentAuthorCurrentUser = currentUser != null && currentUser.uid == comment.authorId;
+
+                    final commentAuthorUsername = isCommentAuthorCurrentUser ? currentUser.username : comment.authorUsername;
+                    final commentAuthorAvatar = isCommentAuthorCurrentUser ? currentUser.avatarUrl : comment.authorAvatarUrl;
 
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 20),
@@ -544,14 +592,13 @@ class _CommentSheetContentState extends State<_CommentSheetContent> {
                           CircleAvatar(
                             radius: 16,
                             backgroundColor: Colors.grey.shade300,
-                            backgroundImage: comment.authorAvatarUrl.isNotEmpty
-                                ? NetworkImage(comment.authorAvatarUrl)
+                            backgroundImage: commentAuthorAvatar.isNotEmpty
+                                ? NetworkImage(commentAuthorAvatar)
                                 : null,
-                            child: comment.authorAvatarUrl.isEmpty
+                            child: commentAuthorAvatar.isEmpty
                                 ? Text(
-                                    comment.authorUsername.isNotEmpty
-                                        ? comment.authorUsername[0]
-                                              .toUpperCase()
+                                    commentAuthorUsername.isNotEmpty
+                                        ? commentAuthorUsername[0].toUpperCase()
                                         : '?',
                                     style: const TextStyle(
                                       fontSize: 12,
@@ -569,7 +616,7 @@ class _CommentSheetContentState extends State<_CommentSheetContent> {
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
                                     Text(
-                                      comment.authorUsername,
+                                      commentAuthorUsername,
                                       style: const TextStyle(
                                         fontWeight: FontWeight.w600,
                                         fontSize: 13,
