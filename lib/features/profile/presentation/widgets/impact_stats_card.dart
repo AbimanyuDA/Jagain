@@ -22,7 +22,7 @@ class ImpactStatsCard extends StatelessWidget {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 8), // Diperkecil dari 12 ke 8
         child: Row(
           children: [
             _StatColumn(
@@ -82,36 +82,36 @@ class _StatColumn extends StatelessWidget {
         children: [
           // Icon bubble
           Container(
-            width: 36,
-            height: 36,
+            width: 28, // Diperkecil dari 36 ke 28
+            height: 28,
             decoration: BoxDecoration(
               color: iconColor.withAlpha(26),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, color: iconColor, size: 18),
+            child: Icon(icon, color: iconColor, size: 14), // Diperkecil dari 18 ke 14
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 4), // Diperkecil dari 6 ke 4
 
           // Value
           Text(
             value,
             style: TextStyle(
-              fontSize: isHighlighted ? 22 : 20,
+              fontSize: isHighlighted ? 18 : 16, // Diperkecil dari 22/20 ke 18/16
               fontWeight: FontWeight.w900,
               color: isHighlighted ? ProfileColors.primary : valueColor,
               letterSpacing: -0.5,
             ),
           ),
-          const SizedBox(height: 3),
+          const SizedBox(height: 1), // Diperkecil dari 3 ke 1
 
           // Label
           Text(
             label,
             style: const TextStyle(
-              fontSize: 11,
+              fontSize: 10, // Diperkecil dari 11 ke 10
               color: Color(0xFF9E9E9E),
               fontWeight: FontWeight.w500,
-              letterSpacing: 0.2,
+              letterSpacing: 0.1,
             ),
             textAlign: TextAlign.center,
           ),
@@ -126,7 +126,7 @@ class _Divider extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 1,
-      height: 56,
+      height: 40, // Diperkecil dari 56 ke 40
       color: Colors.grey.shade100,
     );
   }

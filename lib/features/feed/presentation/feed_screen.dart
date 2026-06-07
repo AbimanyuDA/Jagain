@@ -22,12 +22,14 @@ class _FeedScreenState extends State<FeedScreen> {
     return BlocProvider(
       create: (context) => FeedBloc()..add(LoadFeed()),
       child: Scaffold(
-        appBar: _currentIndex == 3
+        appBar: (_currentIndex == 0 || _currentIndex == 3)
             ? null
             : AppBar(
                 leading: IconButton(
-                  icon: const Icon(Icons.menu, color: Color(0xFF0F1E36)),
-                  onPressed: () {},
+                  icon: const Icon(Icons.add, color: Color(0xFF0F1E36)),
+                  onPressed: () {
+                    context.push('/create-report');
+                  },
                 ),
                 automaticallyImplyLeading: false,
                 title: const Text(
@@ -62,21 +64,59 @@ class _FeedScreenState extends State<FeedScreen> {
                     onRefresh: () async {
                       context.read<FeedBloc>().add(LoadFeed());
                     },
-                    child: ListView.builder(
-                      itemCount: posts.length,
-                      padding: const EdgeInsets.only(top: 8, bottom: 80), // Padding to avoid FAB overlap
-                      itemBuilder: (context, index) {
-                        final post = posts[index];
-                        return PostCard(
-                          post: post,
-                          onUpvotePressed: () {
-                            context.read<FeedBloc>().add(ToggleUpvote(post.id));
-                          },
-                          onDownvotePressed: () {
-                            context.read<FeedBloc>().add(ToggleDownvote(post.id));
-                          },
-                        );
-                      },
+                    child: CustomScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      slivers: [
+                        SliverAppBar(
+                          floating: true,
+                          snap: true,
+                          pinned: false,
+                          leading: IconButton(
+                            icon: const Icon(Icons.add, color: Color(0xFF0F1E36)),
+                            onPressed: () {
+                              context.push('/create-report');
+                            },
+                          ),
+                          automaticallyImplyLeading: false,
+                          title: const Text(
+                            'JAGAIN',
+                            style: TextStyle(
+                              color: Color(0xFF0F1E36),
+                              fontWeight: FontWeight.w900,
+                              fontSize: 22,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          actions: [
+                            IconButton(
+                              icon: const Icon(Icons.search, color: Color(0xFF0F1E36)),
+                              onPressed: () {},
+                            ),
+                          ],
+                          backgroundColor: Colors.white,
+                          elevation: 0.5,
+                        ),
+                        SliverPadding(
+                          padding: const EdgeInsets.only(top: 8, bottom: 80), // Padding to avoid FAB overlap
+                          sliver: SliverList(
+                            delegate: SliverChildBuilderDelegate(
+                              (context, index) {
+                                final post = posts[index];
+                                return PostCard(
+                                  post: post,
+                                  onUpvotePressed: () {
+                                    context.read<FeedBloc>().add(ToggleUpvote(post.id));
+                                  },
+                                  onDownvotePressed: () {
+                                    context.read<FeedBloc>().add(ToggleDownvote(post.id));
+                                  },
+                                );
+                              },
+                              childCount: posts.length,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   );
                 } else if (state is FeedError) {
@@ -97,17 +137,7 @@ class _FeedScreenState extends State<FeedScreen> {
           ],
         ),
         
-        // Floating Action Button for reporting (Developer C entrypoint)
-        floatingActionButton: FloatingActionButton(
-          onPressed: () {
-            context.push('/create-report');
-          },
-          backgroundColor: const Color(0xFF0F1E36), // Match dark blue button in mockup
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: const Icon(Icons.add, color: Colors.white, size: 28),
-        ),
+
 
         // Bottom Navigation Bar
         bottomNavigationBar: Container(

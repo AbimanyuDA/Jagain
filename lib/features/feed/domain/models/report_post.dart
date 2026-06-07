@@ -7,6 +7,7 @@ class ReportPost {
   final String title;
   final String description;
   final String imageUrl;
+  final List<String>? imageUrls; // List of image URLs for carousel
   final String category; // e.g., "JALAN", "PJU"
   final String urgency; // e.g., "URGENT", "NORMAL"
   final int upvotes;
@@ -24,6 +25,7 @@ class ReportPost {
     required this.title,
     required this.description,
     required this.imageUrl,
+    this.imageUrls,
     required this.category,
     required this.urgency,
     required this.upvotes,
@@ -47,6 +49,7 @@ class ReportPost {
       title: title,
       description: description,
       imageUrl: imageUrl,
+      imageUrls: imageUrls,
       category: category,
       urgency: urgency,
       upvotes: upvotes ?? this.upvotes,

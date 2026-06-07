@@ -8,7 +8,11 @@ abstract class ProfileEvent extends Equatable {
 }
 
 class LoadProfile extends ProfileEvent {
-  const LoadProfile();
+  final String? username;
+  const LoadProfile({this.username});
+
+  @override
+  List<Object> get props => username != null ? [username!] : [];
 }
 
 class SwitchProfileTab extends ProfileEvent {

@@ -49,6 +49,13 @@ class AppRoutes {
         path: profile,
         builder: (BuildContext context, GoRouterState state) => const ProfileScreen(),
       ),
+      GoRoute(
+        path: '/profile/:username',
+        builder: (BuildContext context, GoRouterState state) {
+          final username = state.pathParameters['username'];
+          return ProfileScreen(targetUsername: username);
+        },
+      ),
     ],
   );
 }
