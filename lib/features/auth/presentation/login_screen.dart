@@ -120,9 +120,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     },
                   ),
                   const SizedBox(height: 16),
-                  TextButton(
-                    onPressed: () => context.push('/register'),
-                    child: const Text('Belum punya akun? Daftar di sini'),
+                  FittedBox(
+                    child: TextButton(
+                      onPressed: () => context.push('/register'),
+                      child: const Text('Belum punya akun? Daftar di sini'),
+                    ),
                   ),
                 ],
               ),

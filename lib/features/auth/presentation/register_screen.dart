@@ -16,32 +16,32 @@ class RegisterScreen extends StatefulWidget {
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _wilayahController = TextEditingController();
 
-  UserRole _selectedRole = UserRole.citizen;
   bool _obscurePassword = true;
 
   @override
   void dispose() {
     _nameController.dispose();
+    _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
-    _wilayahController.dispose();
     super.dispose();
   }
 
   void _submit() {
     if (_formKey.currentState!.validate()) {
+      // Role selalu citizen saat register.
+      // Upgrade ke pejabat dilakukan via menu Pengaturan.
       context.read<AuthBloc>().add(AuthRegisterRequested(
             name: _nameController.text.trim(),
+            username: _usernameController.text.trim(),
             email: _emailController.text.trim(),
             password: _passwordController.text.trim(),
-            role: _selectedRole,
-            wilayah: _selectedRole == UserRole.official
-                ? _wilayahController.text.trim()
-                : null,
+            role: UserRole.citizen,
+            wilayah: null,
           ));
     }
   }
@@ -78,6 +78,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 16),
                 TextFormField(
+                  controller: _usernameController,
+                  decoration: const InputDecoration(
+                    labelText: 'Username',
+                    prefixIcon: Icon(Icons.alternate_email),
+                  ),
+                  validator: (val) {
+                    if (val == null || val.isEmpty) return 'Username wajib diisi';
+                    if (val.contains(' ')) return 'Username tidak boleh mengandung spasi';
+                    if (val.length < 3) return 'Username minimal 3 karakter';
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+                TextFormField(
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
@@ -111,40 +125,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     return null;
                   },
                 ),
-                const SizedBox(height: 16),
-                DropdownButtonFormField<UserRole>(
-                  initialValue: _selectedRole,
-                  decoration: const InputDecoration(
-                    labelText: 'Daftar sebagai',
-                    prefixIcon: Icon(Icons.badge_outlined),
-                  ),
-                  items: const [
-                    DropdownMenuItem(
-                      value: UserRole.citizen,
-                      child: Text('Warga'),
-                    ),
-                    DropdownMenuItem(
-                      value: UserRole.official,
-                      child: Text('Pejabat'),
-                    ),
-                  ],
-                  onChanged: (val) =>
-                      setState(() => _selectedRole = val ?? UserRole.citizen),
-                ),
-                if (_selectedRole == UserRole.official) ...[
-                  const SizedBox(height: 16),
-                  TextFormField(
-                    controller: _wilayahController,
-                    decoration: const InputDecoration(
-                      labelText: 'Wilayah Kerja (contoh: Surabaya)',
-                      prefixIcon: Icon(Icons.location_on_outlined),
-                    ),
-                    validator: (val) => (_selectedRole == UserRole.official &&
-                            (val == null || val.isEmpty))
-                        ? 'Wilayah wajib diisi untuk pejabat'
-                        : null,
-                  ),
-                ],
+
                 const SizedBox(height: 24),
                 BlocBuilder<AuthBloc, AuthState>(
                   builder: (context, state) {
