@@ -42,3 +42,21 @@ class AuthRegisterRequested extends AuthEvent {
 }
 
 class AuthLogoutRequested extends AuthEvent {}
+
+class AuthUserRefreshed extends AuthEvent {
+  final UserModel user;
+
+  const AuthUserRefreshed(this.user);
+
+  @override
+  List<Object?> get props => [user];
+}
+
+class AuthSwitchAccountRequested extends AuthEvent {
+  final String uid;
+
+  const AuthSwitchAccountRequested(this.uid);
+
+  @override
+  List<Object?> get props => [uid];
+}

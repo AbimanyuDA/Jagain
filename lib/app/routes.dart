@@ -15,6 +15,8 @@ import '../features/admin_panel/presentation/report_moderation_screen.dart';
 import '../features/admin_panel/presentation/official_verification_screen.dart';
 import '../features/admin_panel/presentation/category_management_screen.dart';
 import '../features/admin_panel/presentation/system_analytics_screen.dart';
+import '../features/profile/presentation/profile_screen.dart';
+import '../features/profile/presentation/edit_profile_screen.dart';
 
 // Halaman-halaman yang boleh diakses tanpa login
 const _publicRoutes = ['/login', '/register'];
@@ -48,6 +50,8 @@ class AppRoutes {
   static const String adminOfficials = '/admin/officials';
   static const String adminCategories = '/admin/categories';
   static const String adminAnalytics = '/admin/analytics';
+  static const String profile = '/profile';
+  static const String editProfile = '/edit-profile';
 
   static GoRouter createRouter(BuildContext context) {
     final authBloc = context.read<AuthBloc>();
@@ -127,6 +131,21 @@ class AppRoutes {
         GoRoute(
           path: adminAnalytics,
           builder: (BuildContext context, GoRouterState state) => const SystemAnalyticsScreen(),
+        ),
+        GoRoute(
+          path: profile,
+          builder: (BuildContext context, GoRouterState state) => const ProfileScreen(),
+        ),
+        GoRoute(
+          path: editProfile,
+          builder: (BuildContext context, GoRouterState state) => const EditProfileScreen(),
+        ),
+        GoRoute(
+          path: '/profile/:username',
+          builder: (BuildContext context, GoRouterState state) {
+            final username = state.pathParameters['username'];
+            return ProfileScreen(targetUsername: username);
+          },
         ),
       ],
     );
