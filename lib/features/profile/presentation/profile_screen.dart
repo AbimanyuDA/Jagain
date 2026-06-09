@@ -7,6 +7,7 @@ import '../../../core/utils/session_manager.dart';
 import '../domain/models/user_profile.dart';
 import '../../auth/presentation/bloc/auth_bloc.dart';
 import '../../auth/presentation/bloc/auth_event.dart';
+import '../../auth/presentation/bloc/auth_state.dart';
 import 'bloc/profile_bloc.dart';
 import 'bloc/profile_event.dart';
 import 'bloc/profile_state.dart';
@@ -24,7 +25,11 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final authState = context.watch<AuthBloc>().state;
+    final currentUserId = authState is AuthAuthenticated ? authState.user.uid : null;
+
     return BlocProvider(
+      key: ValueKey('${currentUserId}_$targetUsername'),
       create: (context) =>
           ProfileBloc()..add(LoadProfile(username: targetUsername)),
       child: _ProfileView(targetUsername: targetUsername),
@@ -100,7 +105,8 @@ class _ProfileViewState extends State<_ProfileView>
         }
       },
       builder: (context, state) {
-        if (state is ProfileLoading) {
+        final authState = context.watch<AuthBloc>().state;
+        if (state is ProfileLoading || authState is AuthLoading) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
           );
@@ -120,32 +126,44 @@ class _ProfileViewState extends State<_ProfileView>
             body: SafeArea(
               top: true,
               bottom: false,
-              child: NestedScrollView(
-                headerSliverBuilder: (context, innerBoxIsScrolled) => [
-                  SliverPersistentHeader(
-                    pinned: true,
-                    delegate: _ProfileHeaderDelegate(
-                      profile: profile,
-                      isOwnProfile: isOwnProfile,
-                      tabController: _tabController,
-                      tabs: _tabs,
-                    ),
-                  ),
-                ],
-
-                body: Container(
-                  color: const Color(0xFFF8F9FA),
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      MyReportsTab(reports: profile.myReports),
-                      SupportedReportsTab(reports: profile.supportedReports),
-                      AchievementsTab(
-                        badges: profile.badges,
-                        availablePoints: profile.availablePointsForRedeem,
+              child: RefreshIndicator(
+                notificationPredicate: (notification) =>
+                    notification.depth == 0 || notification.depth == 2,
+                displacement: 80.0,
+                onRefresh: () async {
+                  final profileBloc = context.read<ProfileBloc>();
+                  profileBloc.add(LoadProfile(username: widget.targetUsername));
+                  await profileBloc.stream.firstWhere(
+                    (state) => state is ProfileLoaded || state is ProfileError,
+                  );
+                },
+                child: NestedScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  headerSliverBuilder: (context, innerBoxIsScrolled) => [
+                    SliverPersistentHeader(
+                      pinned: true,
+                      delegate: _ProfileHeaderDelegate(
+                        profile: profile,
                         isOwnProfile: isOwnProfile,
+                        tabController: _tabController,
+                        tabs: _tabs,
                       ),
-                    ],
+                    ),
+                  ],
+                  body: Container(
+                    color: const Color(0xFFF8F9FA),
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        MyReportsTab(reports: profile.myReports),
+                        SupportedReportsTab(reports: profile.supportedReports),
+                        AchievementsTab(
+                          badges: profile.badges,
+                          availablePoints: profile.availablePointsForRedeem,
+                          isOwnProfile: isOwnProfile,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -473,7 +491,6 @@ class _ProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
                         onTap: () {
                           Navigator.pop(sheetContext);
                           context.read<AuthBloc>().add(AuthSwitchAccountRequested(session['uid'] ?? ''));
-                          context.read<ProfileBloc>().add(LoadProfile(username: username));
                         },
                       );
                     }).toList(),

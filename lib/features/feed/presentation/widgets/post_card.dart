@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../auth/domain/user_model.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
@@ -27,6 +28,48 @@ class PostCard extends StatefulWidget {
 
 class _PostCardState extends State<PostCard> {
   int _currentImageIndex = 0;
+  String? _fetchedAvatarUrl;
+  bool _isFetchingAvatar = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAvatarIfNeeded();
+  }
+
+  @override
+  void didUpdateWidget(PostCard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.post.userAvatarUrl != oldWidget.post.userAvatarUrl ||
+        widget.post.authorId != oldWidget.post.authorId) {
+      _fetchedAvatarUrl = null;
+      _fetchAvatarIfNeeded();
+    }
+  }
+
+  Future<void> _fetchAvatarIfNeeded() async {
+    if (widget.post.userAvatarUrl.isEmpty && !_isFetchingAvatar) {
+      _isFetchingAvatar = true;
+      try {
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(widget.post.authorId)
+            .get();
+        if (doc.exists && doc.data() != null) {
+          final data = doc.data()!;
+          if (mounted) {
+            setState(() {
+              _fetchedAvatarUrl = data['avatarUrl'] ?? '';
+            });
+          }
+        }
+      } catch (e) {
+        print('Error fetching fallback avatar: $e');
+      } finally {
+        _isFetchingAvatar = false;
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,7 +81,11 @@ class _PostCardState extends State<PostCard> {
     final isCurrentUser = currentUser != null && currentUser.uid == widget.post.authorId;
 
     final displayUserName = isCurrentUser ? currentUser.username : widget.post.userName;
-    final displayUserAvatar = isCurrentUser ? currentUser.avatarUrl : widget.post.userAvatarUrl;
+    final displayUserAvatar = isCurrentUser 
+        ? currentUser.avatarUrl 
+        : (widget.post.userAvatarUrl.isNotEmpty 
+            ? widget.post.userAvatarUrl 
+            : (_fetchedAvatarUrl ?? ''));
 
     String displayUserBadge = widget.post.userBadge;
     if (isCurrentUser) {
