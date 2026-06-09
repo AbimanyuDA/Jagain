@@ -35,13 +35,15 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (_) =>
-          AuthBloc(repository: AuthRepository())..add(AuthCheckRequested()),
-      child: MaterialApp.router(
-        title: 'Jagain',
-        theme: AppTheme.lightTheme,
-        routerConfig: AppRoutes.router,
-        debugShowCheckedModeBanner: false,
+      create: (_) => AuthBloc(repository: AuthRepository())
+        ..add(AuthCheckRequested()),
+      child: Builder(
+        builder: (context) => MaterialApp.router(
+          title: 'Jagain',
+          theme: AppTheme.lightTheme,
+          routerConfig: AppRoutes.createRouter(context),
+          debugShowCheckedModeBanner: false,
+        ),
       ),
     );
   }
