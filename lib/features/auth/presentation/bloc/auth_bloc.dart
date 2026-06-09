@@ -99,7 +99,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthSwitchAccountRequested event,
     Emitter<AuthState> emit,
   ) async {
-    emit(AuthLoading());
+    final currentState = state;
+    if (currentState is AuthAuthenticated) {
+      emit(AuthSwitching(previousUser: currentState.user));
+    } else {
+      emit(AuthLoading());
+    }
     try {
       final sessions = await SessionManager.getSessions();
       final session = sessions.firstWhere((s) => s['uid'] == event.uid);

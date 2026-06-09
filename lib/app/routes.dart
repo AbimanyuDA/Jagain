@@ -1,7 +1,7 @@
 import 'dart:async';
 
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/register_screen.dart';
@@ -14,18 +14,24 @@ import '../features/admin_panel/presentation/report_moderation_screen.dart';
 import '../features/admin_panel/presentation/system_analytics_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import '../features/profile/presentation/edit_profile_screen.dart';
+import '../features/auth/presentation/bloc/auth_bloc.dart';
+import '../features/auth/presentation/bloc/auth_state.dart';
+import '../features/auth/domain/user_model.dart';
+import '../features/pejabat_dashboard/presentation/pejabat_dashboard_screen.dart';
 
-class _GoRouterRefreshStream extends ChangeNotifier {
-  _GoRouterRefreshStream(Stream<dynamic> stream) {
+const _publicRoutes = ['/login', '/register'];
+
+class GoRouterRefreshStream extends ChangeNotifier {
+  GoRouterRefreshStream(Stream<dynamic> stream) {
     notifyListeners();
-    _subscription = stream.asBroadcastStream().listen((_) => notifyListeners());
+    _sub = stream.asBroadcastStream().listen((_) => notifyListeners());
   }
 
-  late final StreamSubscription<dynamic> _subscription;
+  late final StreamSubscription<dynamic> _sub;
 
   @override
   void dispose() {
-    _subscription.cancel();
+    _sub.cancel();
     super.dispose();
   }
 }
@@ -44,87 +50,113 @@ class AppRoutes {
   static const String profile = '/profile';
   static const String editProfile = '/edit-profile';
 
-  static final GoRouter router = GoRouter(
-    initialLocation: feed,
-    refreshListenable: _GoRouterRefreshStream(
-      FirebaseAuth.instance.authStateChanges(),
-    ),
-    redirect: (BuildContext context, GoRouterState state) {
-      final isLoggedIn = FirebaseAuth.instance.currentUser != null;
-      final isAuthRoute =
-          state.matchedLocation == login || state.matchedLocation == register;
+  static GoRouter createRouter(BuildContext context) {
+    final authBloc = context.read<AuthBloc>();
 
-      if (!isLoggedIn) return isAuthRoute ? null : login;
-      if (isAuthRoute) {
-        final isAdding = state.uri.queryParameters['adding'] == 'true';
-        if (isAdding) return null;
-        return feed;
-      }
-      return null;
-    },
-    routes: [
-      GoRoute(
-        path: feed,
-        builder: (BuildContext context, GoRouterState state) =>
-            const FeedScreen(),
-      ),
-      GoRoute(
-        path: login,
-        builder: (BuildContext context, GoRouterState state) =>
-            const LoginScreen(),
-      ),
-      GoRoute(
-        path: register,
-        builder: (BuildContext context, GoRouterState state) =>
-            const RegisterScreen(),
-      ),
-      GoRoute(
-        path: createReport,
-        builder: (BuildContext context, GoRouterState state) =>
-            const CreateReportScreen(),
-      ),
-      GoRoute(
-        path: adminDashboard,
-        builder: (BuildContext context, GoRouterState state) =>
-            const AdminDashboardScreen(),
-      ),
-      GoRoute(
-        path: adminModeration,
-        builder: (BuildContext context, GoRouterState state) =>
-            const ReportModerationScreen(),
-      ),
-      GoRoute(
-        path: adminOfficials,
-        builder: (BuildContext context, GoRouterState state) =>
-            const OfficialVerificationScreen(),
-      ),
-      GoRoute(
-        path: adminCategories,
-        builder: (BuildContext context, GoRouterState state) =>
-            const CategoryManagementScreen(),
-      ),
-      GoRoute(
-        path: adminAnalytics,
-        builder: (BuildContext context, GoRouterState state) =>
-            const SystemAnalyticsScreen(),
-      ),
-      GoRoute(
-        path: profile,
-        builder: (BuildContext context, GoRouterState state) =>
-            const ProfileScreen(),
-      ),
-      GoRoute(
-        path: editProfile,
-        builder: (BuildContext context, GoRouterState state) =>
-            const EditProfileScreen(),
-      ),
-      GoRoute(
-        path: '/profile/:username',
-        builder: (BuildContext context, GoRouterState state) {
-          final username = state.pathParameters['username'];
-          return ProfileScreen(targetUsername: username);
-        },
-      ),
-    ],
-  );
+    return GoRouter(
+      initialLocation: feed,
+      refreshListenable: GoRouterRefreshStream(authBloc.stream),
+      redirect: (BuildContext ctx, GoRouterState state) {
+        final authState = authBloc.state;
+        final isPublicRoute = _publicRoutes.contains(state.matchedLocation);
+
+        if (authState is AuthSwitching) {
+          return null;
+        }
+
+        if (authState is AuthLoading || authState is AuthInitial) {
+          return isPublicRoute ? null : login;
+        }
+
+        final isLoggedIn = authState is AuthAuthenticated;
+
+        if (!isLoggedIn && !isPublicRoute) return login;
+
+        if (isLoggedIn && isPublicRoute) {
+          final isAdding = state.uri.queryParameters['adding'] == 'true';
+          if (isAdding) return null;
+          return feed;
+        }
+
+        if (authState is AuthAuthenticated) {
+          final user = authState.user;
+          final loc = state.matchedLocation;
+
+          if (loc == adminDashboard && user.role != UserRole.admin) return feed;
+          if (loc == pejabatDashboard && user.role != UserRole.official) return feed;
+        }
+
+        return null;
+      },
+      routes: [
+        GoRoute(
+          path: feed,
+          builder: (BuildContext context, GoRouterState state) =>
+              const FeedScreen(),
+        ),
+        GoRoute(
+          path: login,
+          builder: (BuildContext context, GoRouterState state) =>
+              const LoginScreen(),
+        ),
+        GoRoute(
+          path: register,
+          builder: (BuildContext context, GoRouterState state) =>
+              const RegisterScreen(),
+        ),
+        GoRoute(
+          path: createReport,
+          builder: (BuildContext context, GoRouterState state) =>
+              const CreateReportScreen(),
+        ),
+        GoRoute(
+          path: pejabatDashboard,
+          builder: (BuildContext context, GoRouterState state) =>
+              const PejabatDashboardScreen(),
+        ),
+        GoRoute(
+          path: adminDashboard,
+          builder: (BuildContext context, GoRouterState state) =>
+              const AdminDashboardScreen(),
+        ),
+        GoRoute(
+          path: adminModeration,
+          builder: (BuildContext context, GoRouterState state) =>
+              const ReportModerationScreen(),
+        ),
+        GoRoute(
+          path: adminOfficials,
+          builder: (BuildContext context, GoRouterState state) =>
+              const OfficialVerificationScreen(),
+        ),
+        GoRoute(
+          path: adminCategories,
+          builder: (BuildContext context, GoRouterState state) =>
+              const CategoryManagementScreen(),
+        ),
+        GoRoute(
+          path: adminAnalytics,
+          builder: (BuildContext context, GoRouterState state) =>
+              const SystemAnalyticsScreen(),
+        ),
+        GoRoute(
+          path: profile,
+          builder: (BuildContext context, GoRouterState state) =>
+              const ProfileScreen(),
+        ),
+        GoRoute(
+          path: editProfile,
+          builder: (BuildContext context, GoRouterState state) =>
+              const EditProfileScreen(),
+        ),
+        GoRoute(
+          path: '/profile/:username',
+          builder: (BuildContext context, GoRouterState state) {
+            final username = state.pathParameters['username'];
+            return ProfileScreen(targetUsername: username);
+          },
+        ),
+      ],
+    );
+  }
 }

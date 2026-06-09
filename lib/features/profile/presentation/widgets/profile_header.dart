@@ -18,35 +18,35 @@ class ProfileHeader extends StatelessWidget {
 
   void _toggleFollow(BuildContext context) {
     final bloc = context.read<ProfileBloc>();
+    final colorScheme = Theme.of(context).colorScheme;
     if (profile.isFollowing) {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          backgroundColor: colorScheme.surface,
           title: Text(
             'Batal mengikuti @${profile.username}?',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,
-              color: Color(0xFF0F1E36),
+              color: colorScheme.onSurface,
             ),
             textAlign: TextAlign.center,
           ),
-          content: const Text(
+          content: Text(
             'Anda tidak akan menerima update laporan dari warga ini di feed lagi.',
-            style: TextStyle(fontSize: 13, color: Colors.grey),
+            style: TextStyle(fontSize: 13, color: colorScheme.onSurfaceVariant),
             textAlign: TextAlign.center,
           ),
           actionsAlignment: MainAxisAlignment.spaceEvenly,
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: const Text(
+              child: Text(
                 'Batal',
                 style: TextStyle(
-                  color: Colors.grey,
+                  color: colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -58,10 +58,7 @@ class ProfileHeader extends StatelessWidget {
               },
               child: const Text(
                 'Batal Mengikuti',
-                style: TextStyle(
-                  color: Colors.red,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -74,281 +71,295 @@ class ProfileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final scaffoldBg = Theme.of(context).scaffoldBackgroundColor;
+
     return Container(
       width: double.infinity,
-      color: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.grey.shade200, width: 1.5),
-                  ),
-                  child: CircleAvatar(
-                    radius: 32,
-                    backgroundColor: Colors.grey.shade100,
-                    backgroundImage: profile.avatarUrl.isNotEmpty
-                        ? NetworkImage(profile.avatarUrl)
-                        : null,
-                    child: profile.avatarUrl.isEmpty
-                        ? Text(
-                            profile.displayName.isNotEmpty
-                                ? profile.displayName[0].toUpperCase()
-                                : '?',
-                            style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black54,
-                            ),
-                          )
-                        : null,
-                  ),
+      color: scaffoldBg,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          // Avatar – centered
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(3),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(color: colorScheme.outline, width: 1.5),
                 ),
-                if (profile.isVerifiedCitizen)
-                  Positioned(
-                    bottom: 0,
-                    right: 0,
-                    child: Container(
-                      padding: const EdgeInsets.all(1.5),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF00A550),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.verified_rounded,
-                        color: Colors.white,
-                        size: 10,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 4),
-
-            Text(
-              profile.displayName,
-              style: const TextStyle(
-                color: Color(0xFF0F1E36),
-                fontWeight: FontWeight.w800,
-                fontSize: 15,
-                letterSpacing: -0.3,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 2),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.location_on_rounded,
-                  size: 11,
-                  color: Colors.grey.shade400,
-                ),
-                const SizedBox(width: 2),
-                Text(
-                  profile.domicile,
-                  style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
-                ),
-              ],
-            ),
-            const SizedBox(height: 4),
-
-            Wrap(
-              alignment: WrapAlignment.center,
-              spacing: 6,
-              runSpacing: 4,
-              children: [
-                if (profile.isVerifiedCitizen)
-                  _BadgeChip(
-                    label: 'Verified Citizen',
-                    icon: Icons.shield_rounded,
-                    color: const Color(0xFF00A550),
-                    bgColor: const Color(0xFFE6F8EF),
-                  ),
-                _BadgeChip(
-                  label: profile.gamificationTitle,
-                  icon: Icons.military_tech_rounded,
-                  color: const Color(0xFFB45309),
-                  bgColor: const Color(0xFFFEF3C7),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                RichText(
-                  text: TextSpan(
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF0F1E36),
-                    ),
-                    children: [
-                      TextSpan(
-                        text: '${profile.followersCount} ',
-                        style: const TextStyle(fontWeight: FontWeight.w800),
-                      ),
-                      const TextSpan(
-                        text: 'pengikut',
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Container(
-                  width: 3,
-                  height: 3,
-                  decoration: const BoxDecoration(
-                    color: Colors.grey,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                RichText(
-                  text: TextSpan(
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF0F1E36),
-                    ),
-                    children: [
-                      TextSpan(
-                        text: '${profile.followingCount} ',
-                        style: const TextStyle(fontWeight: FontWeight.w800),
-                      ),
-                      const TextSpan(
-                        text: 'mengikuti',
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            if (isOwnProfile)
-              SizedBox(
-                width: double.infinity,
-                height: 30,
-                child: OutlinedButton(
-                  onPressed: () async {
-                    final updated = await context.push<bool>(
-                      AppRoutes.editProfile,
-                    );
-                    if (updated == true && context.mounted) {
-                      context.read<ProfileBloc>().add(const LoadProfile());
-                    }
-                  },
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: Colors.grey.shade300, width: 1),
-                    foregroundColor: const Color(0xFF0F1E36),
-                    padding: EdgeInsets.zero,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    textStyle: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  child: const Text('Edit Profil'),
-                ),
-              )
-            else
-              Row(
-                children: [
-                  Expanded(
-                    child: SizedBox(
-                      height: 30,
-                      child: profile.isFollowing
-                          ? OutlinedButton(
-                              onPressed: () => _toggleFollow(context),
-                              style: OutlinedButton.styleFrom(
-                                side: BorderSide(
-                                  color: Colors.grey.shade300,
-                                  width: 1,
-                                ),
-                                foregroundColor: const Color(0xFF0F1E36),
-                                padding: EdgeInsets.zero,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              child: const Text(
-                                'Mengikuti',
-                                style: TextStyle(
-                                  color: Color(0xFF0F1E36),
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            )
-                          : ElevatedButton(
-                              onPressed: () => _toggleFollow(context),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF0F1E36),
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                padding: EdgeInsets.zero,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                              ),
-                              child: const Text(
-                                'Ikuti',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: SizedBox(
-                      height: 30,
-                      child: OutlinedButton(
-                        onPressed: () {},
-                        style: OutlinedButton.styleFrom(
-                          side: BorderSide(
-                            color: Colors.grey.shade300,
-                            width: 1,
-                          ),
-                          foregroundColor: const Color(0xFF0F1E36),
-                          padding: EdgeInsets.zero,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                        ),
-                        child: const Text(
-                          'Kirim Pesan',
+                child: CircleAvatar(
+                  radius: 42,
+                  backgroundColor: colorScheme.surfaceContainer,
+                  backgroundImage: profile.avatarUrl.isNotEmpty
+                      ? NetworkImage(profile.avatarUrl)
+                      : null,
+                  child: profile.avatarUrl.isEmpty
+                      ? Text(
+                          profile.displayName.isNotEmpty
+                              ? profile.displayName[0].toUpperCase()
+                              : '?',
                           style: TextStyle(
-                            color: Color(0xFF0F1E36),
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
+                            fontSize: 30,
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurfaceVariant,
                           ),
-                        ),
-                      ),
+                        )
+                      : null,
+                ),
+              ),
+              if (profile.isVerifiedCitizen)
+                Positioned(
+                  bottom: 3,
+                  right: 3,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF00A550),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.verified_rounded,
+                      color: Colors.white,
+                      size: 13,
                     ),
                   ),
-                ],
+                ),
+            ],
+          ),
+
+          const SizedBox(height: 12),
+
+          // Display name – centered
+          Text(
+            profile.displayName,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: colorScheme.onSurface,
+              fontWeight: FontWeight.w800,
+              fontSize: 17,
+              letterSpacing: -0.3,
+            ),
+          ),
+
+          const SizedBox(height: 2),
+
+          // Username – centered
+          Text(
+            '@${profile.username}',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: colorScheme.onSurfaceVariant,
+              fontSize: 13,
+              fontWeight: FontWeight.w400,
+            ),
+          ),
+
+          const SizedBox(height: 10),
+
+          // Badges – centered
+          Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 6,
+            runSpacing: 4,
+            children: [
+              if (profile.isVerifiedCitizen)
+                _BadgeChip(
+                  label: 'Verified Citizen',
+                  icon: Icons.shield_rounded,
+                  color: const Color(0xFF00A550),
+                  bgColor: const Color(0xFFE6F8EF),
+                ),
+              _BadgeChip(
+                label: profile.gamificationTitle,
+                icon: Icons.military_tech_rounded,
+                color: const Color(0xFFB45309),
+                bgColor: const Color(0xFFFEF3C7),
               ),
-          ],
-        ),
+              if (profile.domicile.isNotEmpty)
+                _BadgeChip(
+                  label: profile.domicile,
+                  icon: Icons.location_on_rounded,
+                  color: colorScheme.onSurfaceVariant,
+                  bgColor: colorScheme.surfaceContainer,
+                ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
+
+          // Stats row – centered
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _StatItem(
+                count: '${profile.totalReports}',
+                label: 'Laporan',
+                colorScheme: colorScheme,
+              ),
+              _StatDivider(colorScheme: colorScheme),
+              _StatItem(
+                count: '${profile.followersCount}',
+                label: 'Pengikut',
+                colorScheme: colorScheme,
+              ),
+              _StatDivider(colorScheme: colorScheme),
+              _StatItem(
+                count: '${profile.followingCount}',
+                label: 'Mengikuti',
+                colorScheme: colorScheme,
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 14),
+
+          // Action buttons
+          if (isOwnProfile)
+            SizedBox(
+              width: double.infinity,
+              height: 36,
+              child: OutlinedButton(
+                onPressed: () async {
+                  final updated = await context.push<bool>(AppRoutes.editProfile);
+                  if (updated == true && context.mounted) {
+                    context.read<ProfileBloc>().add(const LoadProfile());
+                  }
+                },
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: colorScheme.onSurface,
+                  side: BorderSide(color: colorScheme.outline),
+                  backgroundColor: colorScheme.surfaceContainer,
+                  padding: EdgeInsets.zero,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  textStyle: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                child: const Text('Edit Profil'),
+              ),
+            )
+          else
+            Row(
+              children: [
+                Expanded(
+                  child: SizedBox(
+                    height: 36,
+                    child: profile.isFollowing
+                        ? OutlinedButton(
+                            onPressed: () => _toggleFollow(context),
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: colorScheme.onSurface,
+                              side: BorderSide(color: colorScheme.outline),
+                              backgroundColor: colorScheme.surfaceContainer,
+                              padding: EdgeInsets.zero,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10)),
+                              textStyle: const TextStyle(
+                                  fontWeight: FontWeight.w600, fontSize: 13),
+                            ),
+                            child: const Text('Mengikuti'),
+                          )
+                        : ElevatedButton(
+                            onPressed: () => _toggleFollow(context),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: colorScheme.primary,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
+                              padding: EdgeInsets.zero,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10)),
+                              textStyle: const TextStyle(
+                                  fontWeight: FontWeight.w600, fontSize: 13),
+                            ),
+                            child: const Text('Ikuti'),
+                          ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: SizedBox(
+                    height: 36,
+                    child: OutlinedButton(
+                      onPressed: () {},
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: colorScheme.onSurface,
+                        side: BorderSide(color: colorScheme.outline),
+                        backgroundColor: colorScheme.surfaceContainer,
+                        padding: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                        textStyle: const TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 13),
+                      ),
+                      child: const Text('Kirim Pesan'),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+        ],
       ),
+    );
+  }
+}
+
+class _StatItem extends StatelessWidget {
+  final String count;
+  final String label;
+  final ColorScheme colorScheme;
+
+  const _StatItem({
+    required this.count,
+    required this.label,
+    required this.colorScheme,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          count,
+          style: TextStyle(
+            fontWeight: FontWeight.w800,
+            fontSize: 18,
+            color: colorScheme.onSurface,
+            letterSpacing: -0.5,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 11.5,
+            color: colorScheme.onSurfaceVariant,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatDivider extends StatelessWidget {
+  final ColorScheme colorScheme;
+  const _StatDivider({required this.colorScheme});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 1,
+      height: 28,
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      color: colorScheme.outlineVariant,
     );
   }
 }
@@ -369,7 +380,7 @@ class _BadgeChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(6),
@@ -383,7 +394,7 @@ class _BadgeChip extends StatelessWidget {
             label,
             style: TextStyle(
               color: color,
-              fontSize: 10,
+              fontSize: 10.5,
               fontWeight: FontWeight.w700,
             ),
           ),

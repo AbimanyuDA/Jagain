@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/theme/theme_cubit.dart';
 import 'bloc/feed_bloc.dart';
 import 'bloc/feed_event.dart';
 import 'bloc/feed_state.dart';
@@ -17,39 +18,31 @@ class FeedScreen extends StatefulWidget {
 class _FeedScreenState extends State<FeedScreen> {
   int _currentIndex = 0;
 
+  void _showSettingsSheet(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final themeCubit = context.read<ThemeCubit>();
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: colorScheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (sheetContext) {
+        return BlocProvider.value(
+          value: themeCubit,
+          child: const _SettingsSheet(),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return BlocProvider(
       create: (context) => FeedBloc()..add(LoadFeed()),
       child: Scaffold(
-        appBar: (_currentIndex == 0 || _currentIndex == 3)
-            ? null
-            : AppBar(
-                leading: IconButton(
-                  icon: const Icon(Icons.add, color: Color(0xFF0F1E36)),
-                  onPressed: () {
-                    context.push('/create-report');
-                  },
-                ),
-                automaticallyImplyLeading: false,
-                title: const Text(
-                  'JAGAIN',
-                  style: TextStyle(
-                    color: Color(0xFF0F1E36),
-                    fontWeight: FontWeight.w900,
-                    fontSize: 22,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                actions: [
-                  IconButton(
-                    icon: const Icon(Icons.search, color: Color(0xFF0F1E36)),
-                    onPressed: () {},
-                  ),
-                ],
-                backgroundColor: Colors.white,
-                elevation: 0.5,
-              ),
         body: IndexedStack(
           index: _currentIndex,
           children: [
@@ -71,19 +64,19 @@ class _FeedScreenState extends State<FeedScreen> {
                           snap: true,
                           pinned: false,
                           leading: IconButton(
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.add,
-                              color: Color(0xFF0F1E36),
+                              color: colorScheme.onSurface,
                             ),
                             onPressed: () {
                               context.push('/create-report');
                             },
                           ),
                           automaticallyImplyLeading: false,
-                          title: const Text(
+                          title: Text(
                             'JAGAIN',
                             style: TextStyle(
-                              color: Color(0xFF0F1E36),
+                              color: colorScheme.onSurface,
                               fontWeight: FontWeight.w900,
                               fontSize: 22,
                               letterSpacing: 0.5,
@@ -91,15 +84,24 @@ class _FeedScreenState extends State<FeedScreen> {
                           ),
                           actions: [
                             IconButton(
-                              icon: const Icon(
-                                Icons.search,
-                                color: Color(0xFF0F1E36),
+                              icon: Icon(
+                                Icons.search_rounded,
+                                color: colorScheme.onSurface,
                               ),
                               onPressed: () {},
                             ),
+                            IconButton(
+                              icon: Icon(
+                                Icons.more_vert_rounded,
+                                color: colorScheme.onSurface,
+                              ),
+                              onPressed: () => _showSettingsSheet(context),
+                            ),
+                            const SizedBox(width: 4),
                           ],
-                          backgroundColor: Colors.white,
-                          elevation: 0.5,
+                          backgroundColor: colorScheme.surface,
+                          elevation: 0,
+                          scrolledUnderElevation: 0,
                         ),
                         SliverPadding(
                           padding: const EdgeInsets.only(top: 8, bottom: 80),
@@ -131,7 +133,7 @@ class _FeedScreenState extends State<FeedScreen> {
                 } else if (state is FeedError) {
                   return Center(child: Text(state.message));
                 }
-                return const Center(child: Text('Memuat Laporan...'));
+                return const Center(child: CircularProgressIndicator());
               },
             ),
 
@@ -147,7 +149,7 @@ class _FeedScreenState extends State<FeedScreen> {
         bottomNavigationBar: Container(
           decoration: BoxDecoration(
             border: Border(
-              top: BorderSide(color: Colors.grey.shade200, width: 1),
+              top: BorderSide(color: colorScheme.outline, width: 0.5),
             ),
           ),
           child: BottomNavigationBar(
@@ -157,15 +159,6 @@ class _FeedScreenState extends State<FeedScreen> {
                 _currentIndex = index;
               });
             },
-            type: BottomNavigationBarType.fixed,
-            backgroundColor: Colors.white,
-            selectedItemColor: const Color(0xFFE53935),
-            unselectedItemColor: Colors.grey.shade500,
-            selectedLabelStyle: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-            ),
-            unselectedLabelStyle: const TextStyle(fontSize: 12),
             items: const [
               BottomNavigationBarItem(
                 icon: Icon(Icons.feed_outlined),
@@ -189,6 +182,79 @@ class _FeedScreenState extends State<FeedScreen> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SettingsSheet extends StatelessWidget {
+  const _SettingsSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: colorScheme.outlineVariant,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Pengaturan',
+                  style: TextStyle(
+                    color: colorScheme.onSurface,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            BlocBuilder<ThemeCubit, ThemeMode>(
+              builder: (context, themeMode) {
+                final isDark = themeMode == ThemeMode.dark;
+                return ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 20),
+                  leading: Icon(
+                    isDark
+                        ? Icons.dark_mode_rounded
+                        : Icons.light_mode_rounded,
+                    color: colorScheme.onSurface,
+                  ),
+                  title: Text(
+                    'Mode Gelap',
+                    style: TextStyle(
+                      color: colorScheme.onSurface,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 15,
+                    ),
+                  ),
+                  trailing: Switch(
+                    value: isDark,
+                    activeThumbColor: colorScheme.primary,
+                    activeTrackColor: colorScheme.primaryContainer,
+                    onChanged: (_) => context.read<ThemeCubit>().toggle(),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
         ),
       ),
     );

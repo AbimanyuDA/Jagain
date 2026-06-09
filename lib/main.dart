@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:go_router/go_router.dart';
 import 'app/routes.dart';
 import 'core/theme/theme.dart';
+import 'core/theme/theme_cubit.dart';
 import 'firebase_options.dart';
 import 'features/auth/data/auth_repository.dart';
 import 'features/auth/presentation/bloc/auth_bloc.dart';
@@ -34,13 +36,39 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) =>
-          AuthBloc(repository: AuthRepository())..add(AuthCheckRequested()),
-      child: MaterialApp.router(
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => ThemeCubit()),
+        BlocProvider(
+          create: (_) => AuthBloc(repository: AuthRepository())
+            ..add(AuthCheckRequested()),
+        ),
+      ],
+      child: const _AppView(),
+    );
+  }
+}
+
+class _AppView extends StatefulWidget {
+  const _AppView();
+
+  @override
+  State<_AppView> createState() => _AppViewState();
+}
+
+class _AppViewState extends State<_AppView> {
+  GoRouter? _router;
+
+  @override
+  Widget build(BuildContext context) {
+    _router ??= AppRoutes.createRouter(context);
+    return BlocBuilder<ThemeCubit, ThemeMode>(
+      builder: (_, themeMode) => MaterialApp.router(
         title: 'Jagain',
         theme: AppTheme.lightTheme,
-        routerConfig: AppRoutes.router,
+        darkTheme: AppTheme.darkTheme,
+        themeMode: themeMode,
+        routerConfig: _router!,
         debugShowCheckedModeBanner: false,
       ),
     );
