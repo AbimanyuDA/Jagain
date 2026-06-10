@@ -5,6 +5,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter/gestures.dart';
+import 'package:flutter/foundation.dart';
 
 class CreateReportScreen extends StatefulWidget {
   const CreateReportScreen({super.key});
@@ -17,7 +19,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   File? _selectedImage;
   final ImagePicker _picker = ImagePicker();
   String _selectedCategory = 'Jalan';
-  final List<String> _categories = ['Jalan', 'Jembatan', 'PJU', 'Drainase'];
+  final List<String> _categories = ['Jalan', 'Jembatan', 'PJU', 'Drainase', 'Lainnya'];
 
   // Map variables
   LatLng? _selectedLocation;
@@ -188,20 +190,20 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
             ),
             const SizedBox(height: 16),
             const Text(
-              'Deskripsi',
+              'Deskripsi Kerusakan',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const SizedBox(height: 8),
             const TextField(
               decoration: InputDecoration(
-                hintText: 'Ceritakan detail permasalahan yang terjadi...',
+                hintText: 'Tuliskan detil kerusakan...',
                 border: OutlineInputBorder(),
               ),
               maxLines: 4,
             ),
             const SizedBox(height: 16),
             const Text(
-              'Kategori Laporan',
+              'Kategori Kerusakan',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const SizedBox(height: 8),
@@ -242,7 +244,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
             ),
             const SizedBox(height: 16),
             const Text(
-              'Lampiran Media',
+              'Foto Kerusakan',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const SizedBox(height: 8),
@@ -289,7 +291,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
             ),
             const SizedBox(height: 16),
             const Text(
-              'Lokasi Kejadian',
+              'Lokasi Kerusakan',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
             const SizedBox(height: 8),
@@ -307,28 +309,30 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
                         GoogleMap(
                           initialCameraPosition: CameraPosition(
                             target: _selectedLocation!,
-                            zoom: 15,
+                            zoom: 17,
                           ),
                           onMapCreated: (controller) {
                             _mapController = controller;
                           },
-                          markers: {
-                            Marker(
-                              markerId: const MarkerId('pinpoint'),
-                              position: _selectedLocation!,
-                              draggable: true,
-                              onDragEnd: (newPosition) {
-                                setState(() {
-                                  _selectedLocation = newPosition;
-                                });
-                              },
-                            ),
-                          },
-                          onTap: (latLng) {
+                          onCameraMove: (CameraPosition position) {
                             setState(() {
-                              _selectedLocation = latLng;
+                              _selectedLocation = position.target;
                             });
                           },
+                          gestureRecognizers: {
+                            Factory<OneSequenceGestureRecognizer>(
+                              () => EagerGestureRecognizer(),
+                            ),
+                          },
+                        ),
+                        Center(
+                          child: Transform.translate(
+                            offset: Offset(0, -24),
+                            child: Icon(
+                              Icons.location_pin,
+                              size: 48,
+                              color: Color(0xFF1B3564)),
+                          ),
                         ),
                         Positioned(
                           bottom: 16,
