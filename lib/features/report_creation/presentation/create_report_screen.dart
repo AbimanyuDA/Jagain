@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class CreateReportScreen extends StatefulWidget {
   const CreateReportScreen({super.key});
@@ -24,7 +25,7 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
   bool _isLocating = false;
   GoogleMapController? _mapController;
   
-  static const String _googleMapsApiKey = "AIzaSyAXwthQ6VHK0QLvfZ7TvpiN9aLN4Twngpc";
+  final String _googleMapsApiKey = dotenv.env['GOOGLE_MAPS_API_KEY'] ?? '';
 
   @override
   void initState() {
@@ -76,7 +77,6 @@ class _CreateReportScreenState extends State<CreateReportScreen> {
     } catch (e) {
       debugPrint("Error getting current location: $e");
       setState(() {
-        // Default location (e.g. Jakarta/Bandung) if location fetch fails
         _selectedLocation = const LatLng(-6.2088, 106.8456);
         _isLocating = false;
       });
