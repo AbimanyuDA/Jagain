@@ -64,7 +64,7 @@ class _PostCardState extends State<PostCard> {
           }
         }
       } catch (e) {
-        print('Error fetching fallback avatar: $e');
+        debugPrint('Error fetching fallback avatar: $e');
       } finally {
         _isFetchingAvatar = false;
       }
@@ -73,18 +73,21 @@ class _PostCardState extends State<PostCard> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final colorScheme = Theme.of(context).colorScheme;
     final isUrgent = widget.post.urgency == 'URGENT';
 
     final authState = context.watch<AuthBloc>().state;
-    final currentUser = authState is AuthAuthenticated ? authState.user : null;
-    final isCurrentUser = currentUser != null && currentUser.uid == widget.post.authorId;
+    final currentUser =
+        authState is AuthAuthenticated ? authState.user : null;
+    final isCurrentUser =
+        currentUser != null && currentUser.uid == widget.post.authorId;
 
-    final displayUserName = isCurrentUser ? currentUser.username : widget.post.userName;
-    final displayUserAvatar = isCurrentUser 
-        ? currentUser.avatarUrl 
-        : (widget.post.userAvatarUrl.isNotEmpty 
-            ? widget.post.userAvatarUrl 
+    final displayUserName =
+        isCurrentUser ? currentUser.username : widget.post.userName;
+    final displayUserAvatar = isCurrentUser
+        ? currentUser.avatarUrl
+        : (widget.post.userAvatarUrl.isNotEmpty
+            ? widget.post.userAvatarUrl
             : (_fetchedAvatarUrl ?? ''));
 
     String displayUserBadge = widget.post.userBadge;
@@ -101,8 +104,8 @@ class _PostCardState extends State<PostCard> {
     }
 
     return Container(
-      color: Colors.white,
-      margin: const EdgeInsets.only(bottom: 12),
+      color: colorScheme.surface,
+      margin: const EdgeInsets.only(bottom: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -120,12 +123,13 @@ class _PostCardState extends State<PostCard> {
                       children: [
                         CircleAvatar(
                           radius: 20,
-                          backgroundColor: Colors.grey.shade200,
+                          backgroundColor: colorScheme.surfaceContainer,
                           backgroundImage: displayUserAvatar.isNotEmpty
                               ? NetworkImage(displayUserAvatar)
                               : null,
                           child: displayUserAvatar.isEmpty
-                              ? const Icon(Icons.person, color: Colors.grey)
+                              ? Icon(Icons.person,
+                                  color: colorScheme.onSurfaceVariant)
                               : null,
                         ),
                         const SizedBox(width: 12),
@@ -135,10 +139,10 @@ class _PostCardState extends State<PostCard> {
                             children: [
                               Text(
                                 displayUserName,
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.bold,
                                   fontSize: 15,
-                                  color: Colors.black87,
+                                  color: colorScheme.onSurface,
                                 ),
                               ),
                               const SizedBox(height: 2),
@@ -148,7 +152,7 @@ class _PostCardState extends State<PostCard> {
                                     widget.post.timeAgo,
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: Colors.grey.shade600,
+                                      color: colorScheme.onSurfaceVariant,
                                     ),
                                   ),
                                   const SizedBox(width: 4),
@@ -156,7 +160,7 @@ class _PostCardState extends State<PostCard> {
                                     '•',
                                     style: TextStyle(
                                       fontSize: 12,
-                                      color: Colors.grey.shade600,
+                                      color: colorScheme.onSurfaceVariant,
                                     ),
                                   ),
                                   const SizedBox(width: 4),
@@ -166,8 +170,8 @@ class _PostCardState extends State<PostCard> {
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                       color: displayUserBadge == 'Verified'
-                                          ? Colors.green.shade700
-                                          : Colors.blue.shade700,
+                                          ? Colors.green.shade600
+                                          : colorScheme.primary,
                                     ),
                                   ),
                                 ],
@@ -180,7 +184,8 @@ class _PostCardState extends State<PostCard> {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.more_horiz, color: Colors.grey),
+                  icon: Icon(Icons.more_horiz,
+                      color: colorScheme.onSurfaceVariant),
                   onPressed: () {},
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -209,27 +214,10 @@ class _PostCardState extends State<PostCard> {
                               width: double.infinity,
                               height: double.infinity,
                               fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) => Container(
-                                color: Colors.grey.shade200,
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.broken_image,
-                                    size: 50,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              ),
+                              errorBuilder: (context, error, stackTrace) =>
+                                  _brokenImagePlaceholder(colorScheme),
                             )
-                          : Container(
-                              color: Colors.grey.shade200,
-                              child: const Center(
-                                child: Icon(
-                                  Icons.broken_image,
-                                  size: 50,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            );
+                          : _brokenImagePlaceholder(colorScheme);
                     },
                   )
                 else
@@ -239,40 +227,21 @@ class _PostCardState extends State<PostCard> {
                           width: double.infinity,
                           height: double.infinity,
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) => Container(
-                            color: Colors.grey.shade200,
-                            child: const Center(
-                              child: Icon(
-                                Icons.broken_image,
-                                size: 50,
-                                color: Colors.grey,
-                              ),
-                            ),
-                          ),
+                          errorBuilder: (context, error, stackTrace) =>
+                              _brokenImagePlaceholder(colorScheme),
                         )
-                      : Container(
-                          color: Colors.grey.shade200,
-                          child: const Center(
-                            child: Icon(
-                              Icons.broken_image,
-                              size: 50,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ),
+                      : _brokenImagePlaceholder(colorScheme),
 
                 Positioned(
                   top: 12,
                   right: 12,
                   child: Container(
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
+                        horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
                       color: isUrgent
                           ? const Color(0xFFD32F2F)
-                          : const Color(0xFF2E5BFF),
+                          : colorScheme.primary,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -333,7 +302,7 @@ class _PostCardState extends State<PostCard> {
                   children: [
                     Container(
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF0F4FF),
+                        color: colorScheme.primaryContainer,
                         borderRadius: BorderRadius.circular(24),
                       ),
                       child: Row(
@@ -344,15 +313,13 @@ class _PostCardState extends State<PostCard> {
                               Icons.arrow_upward,
                               size: 20,
                               color: widget.post.isUpvoted
-                                  ? theme.colorScheme.primary
-                                  : Colors.black87,
+                                  ? colorScheme.primary
+                                  : colorScheme.onSurface,
                             ),
                             onPressed: widget.onUpvotePressed,
                             constraints: const BoxConstraints(),
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 8,
-                            ),
+                                horizontal: 10, vertical: 8),
                           ),
                           Text(
                             '${widget.post.upvotes}',
@@ -360,8 +327,8 @@ class _PostCardState extends State<PostCard> {
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                               color: widget.post.isUpvoted
-                                  ? theme.colorScheme.primary
-                                  : Colors.black87,
+                                  ? colorScheme.primary
+                                  : colorScheme.onSurface,
                             ),
                           ),
                           IconButton(
@@ -370,14 +337,12 @@ class _PostCardState extends State<PostCard> {
                               size: 20,
                               color: widget.post.isDownvoted
                                   ? Colors.red
-                                  : Colors.black87,
+                                  : colorScheme.onSurface,
                             ),
                             onPressed: widget.onDownvotePressed,
                             constraints: const BoxConstraints(),
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 8,
-                            ),
+                                horizontal: 10, vertical: 8),
                           ),
                         ],
                       ),
@@ -389,24 +354,22 @@ class _PostCardState extends State<PostCard> {
                         borderRadius: BorderRadius.circular(8),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 4,
-                          ),
+                              horizontal: 6, vertical: 4),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.build_circle_outlined,
                                 size: 18,
-                                color: Colors.black54,
+                                color: colorScheme.onSurfaceVariant,
                               ),
                               const SizedBox(width: 4),
                               Flexible(
                                 child: Text(
                                   '${widget.post.updatesCount} Updates',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 13,
-                                    color: Colors.black87,
+                                    color: colorScheme.onSurface,
                                     fontWeight: FontWeight.w500,
                                   ),
                                   overflow: TextOverflow.ellipsis,
@@ -424,24 +387,22 @@ class _PostCardState extends State<PostCard> {
                         borderRadius: BorderRadius.circular(8),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 4,
-                          ),
+                              horizontal: 6, vertical: 4),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.chat_bubble_outline,
                                 size: 18,
-                                color: Colors.black54,
+                                color: colorScheme.onSurfaceVariant,
                               ),
                               const SizedBox(width: 4),
                               Flexible(
                                 child: Text(
                                   '${widget.post.repliesCount} Replies',
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 13,
-                                    color: Colors.black87,
+                                    color: colorScheme.onSurface,
                                     fontWeight: FontWeight.w500,
                                   ),
                                   overflow: TextOverflow.ellipsis,
@@ -458,10 +419,10 @@ class _PostCardState extends State<PostCard> {
 
                 Text(
                   widget.post.title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 17,
                     fontWeight: FontWeight.bold,
-                    color: Color(0xFF0F1E36),
+                    color: colorScheme.onSurface,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -470,7 +431,7 @@ class _PostCardState extends State<PostCard> {
                   widget.post.description,
                   style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey.shade700,
+                    color: colorScheme.onSurfaceVariant,
                     height: 1.35,
                   ),
                 ),
@@ -482,11 +443,25 @@ class _PostCardState extends State<PostCard> {
     );
   }
 
+  Widget _brokenImagePlaceholder(ColorScheme colorScheme) {
+    return Container(
+      color: colorScheme.surfaceContainer,
+      child: Center(
+        child: Icon(
+          Icons.broken_image_outlined,
+          size: 48,
+          color: colorScheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+
   void _showCommentBottomSheet(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: colorScheme.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -507,18 +482,10 @@ class _CommentSheetContent extends StatefulWidget {
 
 class _CommentSheetContentState extends State<_CommentSheetContent> {
   final TextEditingController _commentController = TextEditingController();
-
   final CommentRepository _repository = CommentRepository();
 
   static const List<String> _quickEmojis = [
-    '❤️',
-    '🙌',
-    '🔥',
-    '👏',
-    '😢',
-    '😍',
-    '😮',
-    '😂',
+    '❤️', '🙌', '🔥', '👏', '😢', '😍', '😮', '😂',
   ];
 
   @override
@@ -530,7 +497,6 @@ class _CommentSheetContentState extends State<_CommentSheetContent> {
   void _submitComment(UserModel? author) {
     final text = _commentController.text.trim();
     if (text.isEmpty || author == null) return;
-
     _commentController.clear();
     setState(() {});
     _repository.addComment(
@@ -551,26 +517,26 @@ class _CommentSheetContentState extends State<_CommentSheetContent> {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
     final authState = context.watch<AuthBloc>().state;
-    final currentUser = authState is AuthAuthenticated ? authState.user : null;
+    final currentUser =
+        authState is AuthAuthenticated ? authState.user : null;
     final currentUserId = FirebaseAuth.instance.currentUser?.uid;
 
     return Container(
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.85,
-      ),
+      constraints:
+          BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.85),
       padding: EdgeInsets.only(
-        bottom: MediaQuery.of(context).viewInsets.bottom,
-      ),
+          bottom: MediaQuery.of(context).viewInsets.bottom),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           const SizedBox(height: 10),
           Container(
-            width: 40,
+            width: 36,
             height: 4,
             decoration: BoxDecoration(
-              color: Colors.grey.shade300,
+              color: colorScheme.outlineVariant,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -579,8 +545,8 @@ class _CommentSheetContentState extends State<_CommentSheetContent> {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
-              children: const [
-                SizedBox(width: 40),
+              children: [
+                const SizedBox(width: 40),
                 Expanded(
                   child: Center(
                     child: Text(
@@ -588,12 +554,12 @@ class _CommentSheetContentState extends State<_CommentSheetContent> {
                       style: TextStyle(
                         fontWeight: FontWeight.w700,
                         fontSize: 15,
-                        color: Colors.black87,
+                        color: colorScheme.onSurface,
                       ),
                     ),
                   ),
                 ),
-                SizedBox(width: 40),
+                const SizedBox(width: 40),
               ],
             ),
           ),
@@ -609,27 +575,30 @@ class _CommentSheetContentState extends State<_CommentSheetContent> {
 
                 final comments = snapshot.data ?? const [];
                 if (comments.isEmpty) {
-                  return const Center(
+                  return Center(
                     child: Text(
                       'Belum ada komentar. Jadilah yang pertama!',
-                      style: TextStyle(color: Colors.grey),
+                      style: TextStyle(color: colorScheme.onSurfaceVariant),
                     ),
                   );
                 }
 
                 return ListView.builder(
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
+                      horizontal: 16, vertical: 8),
                   itemCount: comments.length,
                   itemBuilder: (context, index) {
                     final comment = comments[index];
                     final isLiked = comment.isLikedBy(currentUserId);
-                    final isCommentAuthorCurrentUser = currentUser != null && currentUser.uid == comment.authorId;
+                    final isCommentAuthorCurrentUser = currentUser != null &&
+                        currentUser.uid == comment.authorId;
 
-                    final commentAuthorUsername = isCommentAuthorCurrentUser ? currentUser.username : comment.authorUsername;
-                    final commentAuthorAvatar = isCommentAuthorCurrentUser ? currentUser.avatarUrl : comment.authorAvatarUrl;
+                    final commentAuthorUsername = isCommentAuthorCurrentUser
+                        ? currentUser.username
+                        : comment.authorUsername;
+                    final commentAuthorAvatar = isCommentAuthorCurrentUser
+                        ? currentUser.avatarUrl
+                        : comment.authorAvatarUrl;
 
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 20),
@@ -638,7 +607,7 @@ class _CommentSheetContentState extends State<_CommentSheetContent> {
                         children: [
                           CircleAvatar(
                             radius: 16,
-                            backgroundColor: Colors.grey.shade300,
+                            backgroundColor: colorScheme.surfaceContainer,
                             backgroundImage: commentAuthorAvatar.isNotEmpty
                                 ? NetworkImage(commentAuthorAvatar)
                                 : null,
@@ -647,9 +616,9 @@ class _CommentSheetContentState extends State<_CommentSheetContent> {
                                     commentAuthorUsername.isNotEmpty
                                         ? commentAuthorUsername[0].toUpperCase()
                                         : '?',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 12,
-                                      color: Colors.black54,
+                                      color: colorScheme.onSurfaceVariant,
                                     ),
                                   )
                                 : null,
@@ -660,21 +629,22 @@ class _CommentSheetContentState extends State<_CommentSheetContent> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Row(
-                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.center,
                                   children: [
                                     Text(
                                       commentAuthorUsername,
-                                      style: const TextStyle(
+                                      style: TextStyle(
                                         fontWeight: FontWeight.w600,
                                         fontSize: 13,
-                                        color: Colors.black87,
+                                        color: colorScheme.onSurface,
                                       ),
                                     ),
                                     if (comment.isOfficial) ...[
                                       const SizedBox(width: 4),
-                                      const Icon(
+                                      Icon(
                                         Icons.verified_rounded,
-                                        color: Color(0xFF2E5BFF),
+                                        color: colorScheme.primary,
                                         size: 13,
                                       ),
                                     ],
@@ -682,7 +652,7 @@ class _CommentSheetContentState extends State<_CommentSheetContent> {
                                     Text(
                                       comment.timeAgo,
                                       style: TextStyle(
-                                        color: Colors.grey.shade500,
+                                        color: colorScheme.onSurfaceVariant,
                                         fontSize: 12,
                                       ),
                                     ),
@@ -691,7 +661,7 @@ class _CommentSheetContentState extends State<_CommentSheetContent> {
                                       Text(
                                         '•  Disematkan',
                                         style: TextStyle(
-                                          color: Colors.grey.shade500,
+                                          color: colorScheme.onSurfaceVariant,
                                           fontSize: 12,
                                         ),
                                       ),
@@ -701,9 +671,9 @@ class _CommentSheetContentState extends State<_CommentSheetContent> {
                                 const SizedBox(height: 3),
                                 Text(
                                   comment.text,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 13.5,
-                                    color: Colors.black87,
+                                    color: colorScheme.onSurface,
                                     height: 1.35,
                                   ),
                                 ),
@@ -726,7 +696,7 @@ class _CommentSheetContentState extends State<_CommentSheetContent> {
                                     size: 14,
                                     color: isLiked
                                         ? Colors.red
-                                        : Colors.grey.shade400,
+                                        : colorScheme.onSurfaceVariant,
                                   ),
                                 ),
                                 if (comment.likeCount > 0) ...[
@@ -734,7 +704,7 @@ class _CommentSheetContentState extends State<_CommentSheetContent> {
                                   Text(
                                     '${comment.likeCount}',
                                     style: TextStyle(
-                                      color: Colors.grey.shade500,
+                                      color: colorScheme.onSurfaceVariant,
                                       fontSize: 10,
                                     ),
                                   ),
@@ -751,11 +721,15 @@ class _CommentSheetContentState extends State<_CommentSheetContent> {
             ),
           ),
 
-          Divider(height: 1, color: Colors.grey.shade200, thickness: 0.5),
+          Divider(
+              height: 1,
+              color: colorScheme.outline,
+              thickness: 0.5),
 
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            color: Colors.white,
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            color: colorScheme.surface,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: _quickEmojis.map((emoji) {
@@ -765,7 +739,8 @@ class _CommentSheetContentState extends State<_CommentSheetContent> {
                       _commentController.text += emoji;
                     });
                   },
-                  child: Text(emoji, style: const TextStyle(fontSize: 22)),
+                  child: Text(emoji,
+                      style: const TextStyle(fontSize: 22)),
                 );
               }).toList(),
             ),
@@ -773,23 +748,24 @@ class _CommentSheetContentState extends State<_CommentSheetContent> {
 
           Container(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-            color: Colors.white,
+            color: colorScheme.surface,
             child: Row(
               children: [
                 CircleAvatar(
                   radius: 16,
-                  backgroundColor: Colors.grey.shade300,
-                  backgroundImage: (currentUser?.avatarUrl.isNotEmpty ?? false)
-                      ? NetworkImage(currentUser!.avatarUrl)
-                      : null,
+                  backgroundColor: colorScheme.surfaceContainer,
+                  backgroundImage:
+                      (currentUser?.avatarUrl.isNotEmpty ?? false)
+                          ? NetworkImage(currentUser!.avatarUrl)
+                          : null,
                   child: (currentUser?.avatarUrl.isEmpty ?? true)
                       ? Text(
                           (currentUser?.name.isNotEmpty ?? false)
                               ? currentUser!.name[0].toUpperCase()
                               : '?',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 12,
-                            color: Colors.black54,
+                            color: colorScheme.onSurfaceVariant,
                           ),
                         )
                       : null,
@@ -798,11 +774,12 @@ class _CommentSheetContentState extends State<_CommentSheetContent> {
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.white,
+                      color: colorScheme.surfaceContainerLow,
                       borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: Colors.grey.shade300),
+                      border: Border.all(color: colorScheme.outline),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16),
                     child: Row(
                       children: [
                         Expanded(
@@ -811,9 +788,14 @@ class _CommentSheetContentState extends State<_CommentSheetContent> {
                             onChanged: (text) {
                               setState(() {});
                             },
-                            style: const TextStyle(fontSize: 14),
-                            decoration: const InputDecoration(
+                            style: TextStyle(
+                                fontSize: 14,
+                                color: colorScheme.onSurface),
+                            decoration: InputDecoration(
                               hintText: 'Gabung dengan percakapan...',
+                              hintStyle: TextStyle(
+                                  color: colorScheme.onSurfaceVariant,
+                                  fontSize: 13),
                               border: InputBorder.none,
                               enabledBorder: InputBorder.none,
                               focusedBorder: InputBorder.none,
@@ -821,27 +803,27 @@ class _CommentSheetContentState extends State<_CommentSheetContent> {
                               disabledBorder: InputBorder.none,
                               focusedErrorBorder: InputBorder.none,
                               isDense: true,
-                              contentPadding: EdgeInsets.symmetric(
-                                vertical: 10,
-                              ),
+                              contentPadding:
+                                  const EdgeInsets.symmetric(vertical: 10),
                             ),
                             textInputAction: TextInputAction.send,
-                            onSubmitted: (_) => _submitComment(currentUser),
+                            onSubmitted: (_) =>
+                                _submitComment(currentUser),
                           ),
                         ),
                         if (_commentController.text.trim().isEmpty)
                           Icon(
                             Icons.sentiment_satisfied_alt_rounded,
-                            color: Colors.grey.shade600,
+                            color: colorScheme.onSurfaceVariant,
                             size: 20,
                           )
                         else
                           GestureDetector(
                             onTap: () => _submitComment(currentUser),
-                            child: const Text(
+                            child: Text(
                               'Kirim',
                               style: TextStyle(
-                                color: Color(0xFF2E5BFF),
+                                color: colorScheme.primary,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14,
                               ),

@@ -64,6 +64,10 @@ class AppRoutes {
         final authState = authBloc.state;
         final isPublicRoute = _publicRoutes.contains(state.matchedLocation);
 
+        if (authState is AuthSwitching) {
+          return null;
+        }
+
         // Masih loading → tunggu, jangan redirect dulu
         if (authState is AuthLoading || authState is AuthInitial) {
           return isPublicRoute ? null : login;
@@ -99,51 +103,63 @@ class AppRoutes {
       routes: [
         GoRoute(
           path: feed,
-          builder: (BuildContext context, GoRouterState state) => const FeedScreen(),
+          builder: (BuildContext context, GoRouterState state) =>
+              const FeedScreen(),
         ),
         GoRoute(
           path: login,
-          builder: (BuildContext context, GoRouterState state) => const LoginScreen(),
+          builder: (BuildContext context, GoRouterState state) =>
+              const LoginScreen(),
         ),
         GoRoute(
           path: register,
-          builder: (BuildContext context, GoRouterState state) => const RegisterScreen(),
+          builder: (BuildContext context, GoRouterState state) =>
+              const RegisterScreen(),
         ),
         GoRoute(
           path: createReport,
-          builder: (BuildContext context, GoRouterState state) => const CreateReportScreen(),
+          builder: (BuildContext context, GoRouterState state) =>
+              const CreateReportScreen(),
         ),
         GoRoute(
           path: pejabatDashboard,
-          builder: (BuildContext context, GoRouterState state) => const PejabatDashboardScreen(),
+          builder: (BuildContext context, GoRouterState state) =>
+              const PejabatDashboardScreen(),
         ),
         GoRoute(
           path: adminDashboard,
-          builder: (BuildContext context, GoRouterState state) => const AdminDashboardScreen(),
+          builder: (BuildContext context, GoRouterState state) =>
+              const AdminDashboardScreen(),
         ),
         GoRoute(
           path: adminModeration,
-          builder: (BuildContext context, GoRouterState state) => const ReportModerationScreen(),
+          builder: (BuildContext context, GoRouterState state) =>
+              const ReportModerationScreen(),
         ),
         GoRoute(
           path: adminOfficials,
-          builder: (BuildContext context, GoRouterState state) => const OfficialVerificationScreen(),
+          builder: (BuildContext context, GoRouterState state) =>
+              const OfficialVerificationScreen(),
         ),
         GoRoute(
           path: adminCategories,
-          builder: (BuildContext context, GoRouterState state) => const CategoryManagementScreen(),
+          builder: (BuildContext context, GoRouterState state) =>
+              const CategoryManagementScreen(),
         ),
         GoRoute(
           path: adminAnalytics,
-          builder: (BuildContext context, GoRouterState state) => const SystemAnalyticsScreen(),
+          builder: (BuildContext context, GoRouterState state) =>
+              const SystemAnalyticsScreen(),
         ),
         GoRoute(
           path: profile,
-          builder: (BuildContext context, GoRouterState state) => const ProfileScreen(),
+          builder: (BuildContext context, GoRouterState state) =>
+              const ProfileScreen(),
         ),
         GoRoute(
           path: editProfile,
-          builder: (BuildContext context, GoRouterState state) => const EditProfileScreen(),
+          builder: (BuildContext context, GoRouterState state) =>
+              const EditProfileScreen(),
         ),
         GoRoute(
           path: '/profile/:username',
