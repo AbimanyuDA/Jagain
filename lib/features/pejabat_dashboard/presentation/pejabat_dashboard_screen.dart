@@ -37,6 +37,7 @@ class PejabatDashboardScreen extends StatelessWidget {
               style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
+            // List of regional reports
             Expanded(
               child: ListView.builder(
                 itemCount: 3,
@@ -46,7 +47,9 @@ class PejabatDashboardScreen extends StatelessWidget {
                       title: Text('Lubang Jalan Raya No. ${index + 1}'),
                       subtitle: const Text('Status: Dilaporkan'),
                       trailing: ElevatedButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          // Change Status flow
+                        },
                         child: const Text('Proses'),
                       ),
                     ),

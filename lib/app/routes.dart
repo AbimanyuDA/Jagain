@@ -19,8 +19,11 @@ import '../features/auth/presentation/bloc/auth_state.dart';
 import '../features/auth/domain/user_model.dart';
 import '../features/pejabat_dashboard/presentation/pejabat_dashboard_screen.dart';
 
+// Halaman-halaman yang boleh diakses tanpa login
 const _publicRoutes = ['/login', '/register'];
 
+/// Menjembatani BLoC stream ke ChangeNotifier agar GoRouter
+/// otomatis re-evaluasi redirect setiap kali auth state berubah.
 class GoRouterRefreshStream extends ChangeNotifier {
   GoRouterRefreshStream(Stream<dynamic> stream) {
     notifyListeners();
@@ -37,6 +40,7 @@ class GoRouterRefreshStream extends ChangeNotifier {
 }
 
 class AppRoutes {
+  // Routes Names
   static const String login = '/login';
   static const String register = '/register';
   static const String feed = '/';
@@ -64,28 +68,36 @@ class AppRoutes {
           return null;
         }
 
+        // Masih loading → tunggu, jangan redirect dulu
         if (authState is AuthLoading || authState is AuthInitial) {
           return isPublicRoute ? null : login;
         }
 
         final isLoggedIn = authState is AuthAuthenticated;
 
+        // Belum login dan bukan halaman publik → paksa ke login
         if (!isLoggedIn && !isPublicRoute) return login;
 
+        // Sudah login tapi masih di halaman login/register → arahkan ke feed (kecuali jika sedang menambah akun baru)
         if (isLoggedIn && isPublicRoute) {
           final isAdding = state.uri.queryParameters['adding'] == 'true';
           if (isAdding) return null;
           return feed;
         }
 
+        // Role guard: cek akses halaman terproteksi
         if (authState is AuthAuthenticated) {
           final user = authState.user;
           final loc = state.matchedLocation;
 
+          // Hanya admin yang boleh akses /admin
           if (loc == adminDashboard && user.role != UserRole.admin) return feed;
+
+          // Hanya official yang boleh akses /pejabat
           if (loc == pejabatDashboard && user.role != UserRole.official) return feed;
         }
 
+        // Lainnya → tidak ada redirect
         return null;
       },
       routes: [
