@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -481,28 +483,30 @@ class _CreateReportViewState extends State<_CreateReportView> {
                     GoogleMap(
                       initialCameraPosition: CameraPosition(
                         target: _selectedLocation!,
-                        zoom: 15,
+                        zoom: 17,
                       ),
                       onMapCreated: (controller) => _mapController = controller,
-                      markers: {
-                        Marker(
-                          markerId: const MarkerId('pinpoint'),
-                          position: _selectedLocation!,
-                          draggable: true,
-                          onDragEnd: (newPosition) {
-                            setState(() {
-                              _selectedLocation = newPosition;
-                              _confirmedAddress = null;
-                            });
-                          },
-                        ),
-                      },
-                      onTap: (latLng) {
+                      onCameraMove: (position) {
                         setState(() {
-                          _selectedLocation = latLng;
+                          _selectedLocation = position.target;
                           _confirmedAddress = null;
                         });
                       },
+                      gestureRecognizers: {
+                        Factory<OneSequenceGestureRecognizer>(
+                          () => EagerGestureRecognizer(),
+                        ),
+                      },
+                    ),
+                    Center(
+                      child: Transform.translate(
+                        offset: const Offset(0, -24),
+                        child: const Icon(
+                          Icons.location_pin,
+                          size: 48,
+                          color: Color(0xFF1B3564),
+                        ),
+                      ),
                     ),
                     Positioned(
                       bottom: 16,
