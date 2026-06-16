@@ -171,7 +171,7 @@ class _CreateReportViewState extends State<_CreateReportView> {
     final client = HttpClient();
     try {
       final uri = Uri.parse(
-        'https://maps.googleapis.com/maps/api/geocode/json?latlng=$lat,$lng&key=$apiKey',
+        'https://maps.googleapis.com/maps/api/geocode/json?latlng=$lat,$lng&key=$apiKey&language=id',
       );
       final request = await client.getUrl(uri);
       final response = await request.close();
