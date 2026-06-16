@@ -60,3 +60,14 @@ class AuthSwitchAccountRequested extends AuthEvent {
   @override
   List<Object?> get props => [uid];
 }
+
+class AuthUpgradeToOfficialRequested extends AuthEvent {
+  final String wilayah;
+
+  const AuthUpgradeToOfficialRequested({
+    required this.wilayah,
+  });
+
+  @override
+  List<Object?> get props => [wilayah];
+}
