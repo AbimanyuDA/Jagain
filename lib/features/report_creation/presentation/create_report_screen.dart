@@ -15,6 +15,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../auth/domain/user_model.dart';
 import '../../auth/presentation/bloc/auth_bloc.dart';
 import '../../auth/presentation/bloc/auth_state.dart';
+import '../../../core/utils/image_compressor.dart';
 import 'bloc/create_report_bloc.dart';
 import 'bloc/create_report_event.dart';
 import 'bloc/create_report_state.dart';
@@ -58,6 +59,7 @@ class _CreateReportViewState extends State<_CreateReportView> {
   LatLng? _selectedLocation;
   Timer? _debounceTimer;
   bool _isLocating = false;
+  bool _isCompressing = false;
   GoogleMapController? _mapController;
 
   @override
@@ -89,7 +91,6 @@ class _CreateReportViewState extends State<_CreateReportView> {
               onTap: () async {
                 final file = await _picker.pickImage(
                   source: ImageSource.camera,
-                  imageQuality: 80,
                 );
                 if (sheetContext.mounted) Navigator.of(sheetContext).pop(file);
               },
@@ -100,7 +101,6 @@ class _CreateReportViewState extends State<_CreateReportView> {
               onTap: () async {
                 final file = await _picker.pickImage(
                   source: ImageSource.gallery,
-                  imageQuality: 80,
                 );
                 if (sheetContext.mounted) Navigator.of(sheetContext).pop(file);
               },
@@ -111,7 +111,13 @@ class _CreateReportViewState extends State<_CreateReportView> {
     );
 
     if (picked != null) {
-      setState(() => _images.add(File(picked.path)));
+      setState(() => _isCompressing = true);
+      try {
+        final compressed = await ImageCompressor.compress(File(picked.path));
+        if (mounted) setState(() => _images.add(compressed));
+      } finally {
+        if (mounted) setState(() => _isCompressing = false);
+      }
     }
   }
 
@@ -518,25 +524,54 @@ class _CreateReportViewState extends State<_CreateReportView> {
                   ),
                 );
               }),
-              GestureDetector(
-                onTap: _pickImages,
-                child: Container(
+              if (_isCompressing)
+                Container(
                   width: 100,
                   height: 110,
+                  margin: const EdgeInsets.only(right: 8),
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey),
+                    color: Colors.grey.shade200,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: const Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.add_a_photo_outlined, color: Colors.grey),
-                      SizedBox(height: 6),
+                      SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      SizedBox(height: 8),
                       Text(
-                        'Tambah Foto',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
+                        'Mengoptimasi...',
+                        style: TextStyle(fontSize: 10, color: Colors.grey),
+                        textAlign: TextAlign.center,
                       ),
                     ],
+                  ),
+                ),
+              GestureDetector(
+                onTap: _isCompressing ? null : _pickImages,
+                child: Opacity(
+                  opacity: _isCompressing ? 0.5 : 1.0,
+                  child: Container(
+                    width: 100,
+                    height: 110,
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.grey),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.add_a_photo_outlined, color: Colors.grey),
+                        SizedBox(height: 6),
+                        Text(
+                          'Tambah Foto',
+                          style: TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),

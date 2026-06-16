@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -108,7 +109,7 @@ class _ProfileViewState extends State<_ProfileView>
                   ListTile(
                     leading: CircleAvatar(
                       backgroundImage: profile.avatarUrl.isNotEmpty
-                          ? NetworkImage(profile.avatarUrl)
+                          ? CachedNetworkImageProvider(profile.avatarUrl)
                           : null,
                       backgroundColor: colorScheme.surfaceContainer,
                       child: profile.avatarUrl.isEmpty
@@ -139,7 +140,7 @@ class _ProfileViewState extends State<_ProfileView>
                       return ListTile(
                         leading: CircleAvatar(
                           backgroundImage: avatarUrl.isNotEmpty
-                              ? NetworkImage(avatarUrl)
+                              ? CachedNetworkImageProvider(avatarUrl)
                               : null,
                           backgroundColor: colorScheme.surfaceContainer,
                           child: avatarUrl.isEmpty

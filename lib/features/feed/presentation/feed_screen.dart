@@ -17,8 +17,28 @@ class FeedScreen extends StatefulWidget {
 
 class _FeedScreenState extends State<FeedScreen> {
   int _currentIndex = 0;
+  late final PageController _pageController;
 
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(keepPage: true);
+  }
 
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _onTabTapped(int index) {
+    setState(() => _currentIndex = index);
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,8 +47,12 @@ class _FeedScreenState extends State<FeedScreen> {
     return BlocProvider(
       create: (context) => FeedBloc()..add(LoadFeed()),
       child: Scaffold(
-        body: IndexedStack(
-          index: _currentIndex,
+        body: PageView(
+          controller: _pageController,
+          physics: const ClampingScrollPhysics(),
+          onPageChanged: (index) {
+            setState(() => _currentIndex = index);
+          },
           children: [
             BlocBuilder<FeedBloc, FeedState>(
               builder: (context, state) {
@@ -131,11 +155,7 @@ class _FeedScreenState extends State<FeedScreen> {
           ),
           child: BottomNavigationBar(
             currentIndex: _currentIndex,
-            onTap: (index) {
-              setState(() {
-                _currentIndex = index;
-              });
-            },
+            onTap: _onTabTapped,
             items: const [
               BottomNavigationBarItem(
                 icon: Icon(Icons.feed_outlined),
@@ -164,5 +184,3 @@ class _FeedScreenState extends State<FeedScreen> {
     );
   }
 }
-
-
