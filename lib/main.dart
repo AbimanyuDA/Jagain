@@ -62,15 +62,13 @@ class _AppViewState extends State<_AppView> {
   @override
   Widget build(BuildContext context) {
     _router ??= AppRoutes.createRouter(context);
-    return BlocBuilder<ThemeCubit, ThemeMode>(
-      builder: (_, themeMode) => MaterialApp.router(
-        title: 'Jagain',
-        theme: AppTheme.lightTheme,
-        darkTheme: AppTheme.darkTheme,
-        themeMode: themeMode,
-        routerConfig: _router!,
-        debugShowCheckedModeBanner: false,
-      ),
+    return MaterialApp.router(
+      title: 'Jagain',
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.light,
+      routerConfig: _router!,
+      debugShowCheckedModeBanner: false,
     );
   }
 }

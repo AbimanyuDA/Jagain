@@ -2,7 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/theme/theme_cubit.dart';
+
 import '../../../core/utils/session_manager.dart';
 import '../domain/models/user_profile.dart';
 import '../../auth/presentation/bloc/auth_bloc.dart';
@@ -207,7 +207,6 @@ class _ProfileViewState extends State<_ProfileView>
 
   void _showOwnProfileSettings(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
-    final themeCubit = context.read<ThemeCubit>();
     final authBloc = context.read<AuthBloc>();
 
     showModalBottomSheet(
@@ -217,12 +216,9 @@ class _ProfileViewState extends State<_ProfileView>
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (sheetContext) {
-        return MultiBlocProvider(
-          providers: [
-            BlocProvider.value(value: themeCubit),
-            BlocProvider.value(value: authBloc),
-          ],
-          child: _ProfileSettingsSheet(),
+        return BlocProvider.value(
+          value: authBloc,
+          child: const _ProfileSettingsSheet(),
         );
       },
     );
@@ -487,37 +483,7 @@ class _ProfileSettingsSheet extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 4),
-            BlocBuilder<ThemeCubit, ThemeMode>(
-              builder: (context, themeMode) {
-                final isDark = themeMode == ThemeMode.dark;
-                return ListTile(
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 20),
-                  leading: Icon(
-                    isDark
-                        ? Icons.dark_mode_rounded
-                        : Icons.light_mode_rounded,
-                    color: colorScheme.onSurface,
-                  ),
-                  title: Text(
-                    'Mode Gelap',
-                    style: TextStyle(
-                        color: colorScheme.onSurface,
-                        fontWeight: FontWeight.w500,
-                        fontSize: 15),
-                  ),
-                  trailing: Switch(
-                    value: isDark,
-                    activeThumbColor: colorScheme.primary,
-                    activeTrackColor: colorScheme.primaryContainer,
-                    onChanged: (_) =>
-                        context.read<ThemeCubit>().toggle(),
-                  ),
-                );
-              },
-            ),
-            Divider(
-                color: colorScheme.outline, thickness: 0.5, height: 8),
+
             ListTile(
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 20),
