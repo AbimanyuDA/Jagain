@@ -18,6 +18,8 @@ import '../features/auth/presentation/bloc/auth_bloc.dart';
 import '../features/auth/presentation/bloc/auth_state.dart';
 import '../features/auth/domain/user_model.dart';
 import '../features/pejabat_dashboard/presentation/pejabat_dashboard_screen.dart';
+import '../features/settings/presentation/settings_screen.dart';
+import '../features/settings/presentation/request_official_screen.dart';
 
 // Halaman-halaman yang boleh diakses tanpa login
 const _publicRoutes = ['/login', '/register'];
@@ -53,6 +55,8 @@ class AppRoutes {
   static const String adminAnalytics = '/admin/analytics';
   static const String profile = '/profile';
   static const String editProfile = '/edit-profile';
+  static const String settings = '/settings';
+  static const String requestOfficial = '/request-official';
 
   static GoRouter createRouter(BuildContext context) {
     final authBloc = context.read<AuthBloc>();
@@ -167,6 +171,14 @@ class AppRoutes {
             final username = state.pathParameters['username'];
             return ProfileScreen(targetUsername: username);
           },
+        ),
+        GoRoute(
+          path: settings,
+          builder: (BuildContext context, GoRouterState state) => const SettingsScreen(),
+        ),
+        GoRoute(
+          path: requestOfficial,
+          builder: (BuildContext context, GoRouterState state) => const RequestOfficialScreen(),
         ),
       ],
     );

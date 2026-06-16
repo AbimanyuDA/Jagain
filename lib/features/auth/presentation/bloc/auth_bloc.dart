@@ -16,8 +16,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthLoginRequested>(_onAuthLoginRequested);
     on<AuthRegisterRequested>(_onAuthRegisterRequested);
     on<AuthLogoutRequested>(_onAuthLogoutRequested);
-    on<AuthUserRefreshed>(_onAuthUserRefreshed);
-    on<AuthSwitchAccountRequested>(_onAuthSwitchAccountRequested);
+    on<AuthUpgradeToOfficialRequested>(_onUpgradeToOfficial);
   }
 
   void _onAuthCheckRequested(
@@ -86,6 +85,27 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await _repository.signOut();
       emit(AuthUnauthenticated());
     } catch (e) {
+      emit(AuthError(e.toString()));
+    }
+  }
+
+  void _onUpgradeToOfficial(
+    AuthUpgradeToOfficialRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    final currentState = state;
+    if (currentState is! AuthAuthenticated) return;
+
+    emit(AuthLoading());
+    try {
+      final updatedUser = await _repository.requestUpgradeToOfficial(
+        uid: currentState.user.uid,
+        wilayah: event.wilayah,
+      );
+      emit(AuthAuthenticated(user: updatedUser));
+    } catch (e) {
+      // Kembalikan state sebelumnya + emit error
+      emit(AuthAuthenticated(user: currentState.user));
       emit(AuthError(e.toString()));
     }
   }

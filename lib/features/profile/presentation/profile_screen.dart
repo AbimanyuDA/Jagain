@@ -206,22 +206,25 @@ class _ProfileViewState extends State<_ProfileView>
   }
 
   void _showOwnProfileSettings(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final authBloc = context.read<AuthBloc>();
+    context.push('/settings');
+    
+    // [INFO] commented diganti dengan implementasi kurob
+    // final colorScheme = Theme.of(context).colorScheme;
+    // final authBloc = context.read<AuthBloc>();
 
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (sheetContext) {
-        return BlocProvider.value(
-          value: authBloc,
-          child: const _ProfileSettingsSheet(),
-        );
-      },
-    );
+    // showModalBottomSheet(
+    //   context: context,
+    //   backgroundColor: colorScheme.surface,
+    //   shape: const RoundedRectangleBorder(
+    //     borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+    //   ),
+    //   builder: (sheetContext) {
+    //     return BlocProvider.value(
+    //       value: authBloc,
+    //       child: const _ProfileSettingsSheet(),
+    //     );
+    //   },
+    // );
   }
 
   @override
