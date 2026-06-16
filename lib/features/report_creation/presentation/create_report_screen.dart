@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -45,6 +46,7 @@ class _CreateReportViewState extends State<_CreateReportView> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _addressController = TextEditingController();
   final _wilayahController = TextEditingController();
   final _picker = ImagePicker();
 
@@ -52,8 +54,9 @@ class _CreateReportViewState extends State<_CreateReportView> {
   String _category = _categories.first;
   String _urgency = _urgencyLevels.first;
 
+
   LatLng? _selectedLocation;
-  String? _confirmedAddress;
+  Timer? _debounceTimer;
   bool _isLocating = false;
   GoogleMapController? _mapController;
 
@@ -65,8 +68,10 @@ class _CreateReportViewState extends State<_CreateReportView> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _titleController.dispose();
     _descriptionController.dispose();
+    _addressController.dispose();
     _wilayahController.dispose();
     super.dispose();
   }
@@ -161,12 +166,12 @@ class _CreateReportViewState extends State<_CreateReportView> {
     }
   }
 
-  Future<String> _reverseGeocode(double lat, double lng) async {
+  Future<Map<String, String?>> _reverseGeocode(double lat, double lng) async {
     final apiKey = dotenv.env['GOOGLE_MAPS_API_KEY'] ?? '';
     final client = HttpClient();
     try {
       final uri = Uri.parse(
-        'https://maps.googleapis.com/maps/api/geocode/json?latlng=$lat,$lng&key=$apiKey',
+        'https://maps.googleapis.com/maps/api/geocode/json?latlng=$lat,$lng&key=$apiKey&language=id',
       );
       final request = await client.getUrl(uri);
       final response = await request.close();
@@ -176,7 +181,15 @@ class _CreateReportViewState extends State<_CreateReportView> {
         if (data['status'] == 'OK' &&
             data['results'] != null &&
             data['results'].isNotEmpty) {
-          return data['results'][0]['formatted_address'] as String;
+            final components = data['results'][0]['address_components'] as List;
+            final wilayahComponent = components.firstWhere(
+              (c) => (c['types'] as List).contains('administrative_area_level_2'),
+              orElse: () => null,
+            );
+          return {
+            'address': data['results'][0]['formatted_address'] as String?,
+            'wilayah': wilayahComponent?['long_name'] as String?,
+          };
         }
       }
     } catch (e) {
@@ -184,21 +197,35 @@ class _CreateReportViewState extends State<_CreateReportView> {
     } finally {
       client.close();
     }
-    return 'Gagal mendapatkan alamat.';
+    return {'address': null, 'wilayah': null};
   }
 
   Future<void> _confirmLocation() async {
     if (_selectedLocation == null) return;
     setState(() => _isLocating = true);
-    final address = await _reverseGeocode(
+
+    final result = await _reverseGeocode(
       _selectedLocation!.latitude,
       _selectedLocation!.longitude,
     );
+
     setState(() {
-      _confirmedAddress = address;
+      _addressController.text = result['address'] ?? '';
+      _wilayahController.text = result['wilayah'] ?? '';
       _isLocating = false;
     });
   }
+
+  // FOR FUTURE USE! save map as image for reducing API call
+  // Future<File?> _takeMapSnapshot() async {
+  //   if (_mapController == null) return null;
+  //   final snapshot = await _mapController!.takeSnapshot();
+  //   if (snapshot == null) return null;
+  //   final tempDir = await Directory.systemTemp.createTemp();
+  //   final file = File('${tempDir.path}/map_snapshot.png');
+  //   await file.writeAsBytes(snapshot);
+  //   return file;
+  // }
 
   void _submit(UserModel author) {
     if (!_formKey.currentState!.validate()) return;
@@ -218,6 +245,14 @@ class _CreateReportViewState extends State<_CreateReportView> {
       );
       return;
     }
+
+    // final snapshotFile = await _takeMapSnapshot();
+    // if (snapshotFile != null) {
+    //   setState(() {
+    //     _images.removeWhere((f) => f.path.contains('map_snapshot'));
+    //     _images.insert(0, snapshotFile);
+    //   });
+    // }
 
     context.read<CreateReportBloc>().add(
       SubmitReportRequested(
@@ -263,114 +298,50 @@ class _CreateReportViewState extends State<_CreateReportView> {
             absorbing: isSubmitting,
             child: Opacity(
               opacity: isSubmitting ? 0.6 : 1,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(16.0),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _buildImagePicker(),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _titleController,
-                        decoration: const InputDecoration(
-                          labelText: 'Judul Laporan',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (val) => (val == null || val.trim().isEmpty)
-                            ? 'Judul wajib diisi'
-                            : null,
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _descriptionController,
-                        decoration: const InputDecoration(
-                          labelText: 'Deskripsi Kerusakan',
-                          border: OutlineInputBorder(),
-                          alignLabelWithHint: true,
-                        ),
-                        maxLines: 4,
-                        validator: (val) => (val == null || val.trim().isEmpty)
-                            ? 'Deskripsi wajib diisi'
-                            : null,
-                      ),
-                      const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              initialValue: _category,
-                              decoration: const InputDecoration(
-                                labelText: 'Kategori',
-                                border: OutlineInputBorder(),
-                              ),
-                              items: _categories
-                                  .map(
-                                    (c) => DropdownMenuItem(
-                                      value: c,
-                                      child: Text(c),
-                                    ),
-                                  )
-                                  .toList(),
-                              onChanged: (val) =>
-                                  setState(() => _category = val ?? _category),
+              child: SafeArea(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildTitleField(),
+                        const SizedBox(height: 16),
+                        _buildDescriptionField(),
+                        const SizedBox(height: 16),
+                        _buildCategoryDropdown(),
+                        const SizedBox(height: 16),
+                        _buildUrgencySegmented(),
+                        const SizedBox(height: 16),
+                        _buildImagePicker(),
+                        const SizedBox(height: 16),
+                        _buildLocationPicker(),
+                        const SizedBox(height: 32),
+
+                        ElevatedButton(
+                          onPressed: author == null ? null : () => _submit(author),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1B3564),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              initialValue: _urgency,
-                              decoration: const InputDecoration(
-                                labelText: 'Urgensi',
-                                border: OutlineInputBorder(),
-                              ),
-                              items: _urgencyLevels
-                                  .map(
-                                    (u) => DropdownMenuItem(
-                                      value: u,
-                                      child: Text(u),
-                                    ),
-                                  )
-                                  .toList(),
-                              onChanged: (val) =>
-                                  setState(() => _urgency = val ?? _urgency),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _wilayahController,
-                        decoration: const InputDecoration(
-                          labelText: 'Wilayah / Kota (contoh: Surabaya)',
-                          helperText:
-                              'Dipakai untuk meneruskan laporan ke pejabat wilayah terkait',
-                          border: OutlineInputBorder(),
+                          child: isSubmitting
+                              ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text('Kirim Laporan'),
                         ),
-                        validator: (val) => (val == null || val.trim().isEmpty)
-                            ? 'Wilayah wajib diisi'
-                            : null,
-                      ),
-                      const SizedBox(height: 16),
-                      _buildLocationPicker(),
-                      const SizedBox(height: 32),
-                      ElevatedButton(
-                        onPressed: author == null
-                            ? null
-                            : () => _submit(author),
-                        child: isSubmitting
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : const Text('Kirim Laporan'),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -378,6 +349,122 @@ class _CreateReportViewState extends State<_CreateReportView> {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildTitleField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Judul Laporan',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _titleController,
+          decoration: const InputDecoration(
+            hintText: 'Judul Laporan',
+            border: OutlineInputBorder(),
+          ),
+          validator: (val) => (val == null || val.trim().isEmpty)
+              ? 'Judul wajib diisi'
+              : null,
+        ),
+      ]
+    );
+  }
+
+  Widget _buildDescriptionField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Deskripsi Kerusakan',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: _descriptionController,
+          decoration: const InputDecoration(
+            hintText: 'Deskripsi Kerusakan',
+            border: OutlineInputBorder(),
+            alignLabelWithHint: true,
+          ),
+          maxLines: 4,
+          validator: (val) => (val == null || val.trim().isEmpty)
+              ? 'Deskripsi wajib diisi'
+              : null,
+        ),
+      ]
+    );
+  }
+
+  Widget _buildCategoryDropdown() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Kategori',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          initialValue: _category,
+          decoration: const InputDecoration(
+            border: OutlineInputBorder(),
+          ),
+          items: _categories
+              .map(
+                (c) => DropdownMenuItem(
+                  value: c,
+                  child: Text(c),
+                ),
+              )
+              .toList(),
+          onChanged: (val) =>
+              setState(() => _category = val ?? _category),
+        ),
+      ]
+    );
+  }
+
+  Widget _buildUrgencySegmented() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Urgensi',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        SegmentedButton<String>(
+          expandedInsets: EdgeInsets.zero,
+          segments: const [
+            ButtonSegment(value: 'NORMAL', label: Text('Normal')),
+            ButtonSegment(value: 'URGENT', label: Text('Urgent')),
+          ],
+          selected: {_urgency},
+          onSelectionChanged: (val) => setState(() => _urgency = val.first),
+          style: ButtonStyle(
+            shape: WidgetStatePropertyAll(
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+              if (states.contains(WidgetState.selected)) {
+                return const Color(0xFF1B3564);
+              }
+              return null;
+            }),
+            foregroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
+              if (states.contains(WidgetState.selected)) {
+                return Colors.white;
+              }
+              return null;
+            }),
+          ),
+        ),
+      ],
     );
   }
 
@@ -466,93 +553,86 @@ class _CreateReportViewState extends State<_CreateReportView> {
       children: [
         const Text(
           'Lokasi Kejadian',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          style: TextStyle(fontWeight: FontWeight.w600),
         ),
         const SizedBox(height: 8),
-        Container(
-          height: 250,
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: _selectedLocation == null
-              ? const Center(child: CircularProgressIndicator())
-              : Stack(
-                  children: [
-                    GoogleMap(
-                      initialCameraPosition: CameraPosition(
-                        target: _selectedLocation!,
-                        zoom: 17,
-                      ),
-                      onMapCreated: (controller) => _mapController = controller,
-                      onCameraMove: (position) {
-                        setState(() {
-                          _selectedLocation = position.target;
-                          _confirmedAddress = null;
-                        });
-                      },
-                      gestureRecognizers: {
-                        Factory<OneSequenceGestureRecognizer>(
-                          () => EagerGestureRecognizer(),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Column(
+            children: [
+              Container(
+                height: 250,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: _selectedLocation == null
+                ? const Center(child: CircularProgressIndicator())
+                : Stack(
+                    children: [
+                      GoogleMap(
+                        initialCameraPosition: CameraPosition(
+                          target: _selectedLocation!,
+                          zoom: 17,
                         ),
-                      },
-                    ),
-                    Center(
-                      child: Transform.translate(
-                        offset: const Offset(0, -24),
-                        child: const Icon(
-                          Icons.location_pin,
-                          size: 48,
-                          color: Color(0xFF1B3564),
-                        ),
+                        onMapCreated: (controller) => _mapController = controller,
+                        onCameraMove: (position) {
+                          setState(() {
+                            _selectedLocation = position.target;
+                            _addressController.text = '';
+                            _wilayahController.text = '';
+                          });
+                          _debounceTimer?.cancel();
+                          _debounceTimer = Timer(const Duration(milliseconds: 800), () {
+                            _confirmLocation();
+                          });
+                        },
+                        gestureRecognizers: {
+                          Factory<OneSequenceGestureRecognizer>(
+                            () => EagerGestureRecognizer(),
+                          ),
+                        },
                       ),
-                    ),
-                    Positioned(
-                      bottom: 16,
-                      left: 16,
-                      right: 16,
-                      child: ElevatedButton.icon(
-                        onPressed: _isLocating ? null : _confirmLocation,
-                        icon: const Icon(Icons.gps_fixed, size: 18),
-                        label: const Text('Konfirmasi Lokasi'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.grey.shade200,
-                          foregroundColor: const Color(0xFF1B3564),
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(8),
+                      Center(
+                        child: Transform.translate(
+                          offset: const Offset(0, -24),
+                          child: const Icon(
+                            Icons.location_pin,
+                            size: 48,
+                            color: Color(0xFF1B3564),
                           ),
                         ),
                       ),
-                    ),
-                  ],
-                ),
-        ),
-        if (_confirmedAddress != null) ...[
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              border: Border.all(color: Colors.blue.shade100),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Icon(Icons.location_on, color: Color(0xFF1B3564)),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    _confirmedAddress!,
-                    style: const TextStyle(fontSize: 14, color: Colors.black87),
+                      if (_isLocating)
+                        const Positioned(
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          child: LinearProgressIndicator(),
+                        ),
+                    ],
                   ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
+        const SizedBox(height: 12),
+        TextFormField(
+          controller: _addressController,
+          decoration: const InputDecoration(
+            labelText: 'Alamat',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextFormField(
+          controller: _wilayahController,
+          decoration: const InputDecoration(
+            labelText: 'Wilayah',
+            border: OutlineInputBorder(),
+          ),
+          validator: (val) =>
+              (val == null || val.trim().isEmpty) ? 'Wilayah wajib diisi' : null,
+        ),
       ],
     );
   }
