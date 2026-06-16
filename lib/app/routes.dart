@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/register_screen.dart';
 import '../features/feed/presentation/feed_screen.dart';
+import '../features/feed/presentation/report_detail_screen.dart';
+import '../features/feed/domain/models/report_post.dart';
 import '../features/report_creation/presentation/create_report_screen.dart';
 import '../features/admin_panel/presentation/admin_dashboard_screen.dart';
 import '../features/admin_panel/presentation/category_management_screen.dart';
@@ -105,6 +107,13 @@ class AppRoutes {
           path: feed,
           builder: (BuildContext context, GoRouterState state) =>
               const FeedScreen(),
+        ),
+        GoRoute(
+          path: '/report-detail',
+          builder: (BuildContext context, GoRouterState state) {
+            final post = state.extra as ReportPost;
+            return ReportDetailScreen(post: post);
+          },
         ),
         GoRoute(
           path: login,

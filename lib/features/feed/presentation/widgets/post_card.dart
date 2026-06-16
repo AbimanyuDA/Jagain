@@ -196,9 +196,11 @@ class _PostCardState extends State<PostCard> {
             ),
           ),
 
-          AspectRatio(
-            aspectRatio: 4 / 5,
-            child: Stack(
+          GestureDetector(
+            onTap: () => context.push('/report-detail', extra: widget.post),
+            child: AspectRatio(
+              aspectRatio: 4 / 5,
+              child: Stack(
               children: [
                 if (widget.post.imageUrls != null &&
                     widget.post.imageUrls!.length > 1)
@@ -320,6 +322,7 @@ class _PostCardState extends State<PostCard> {
               ],
             ),
           ),
+        ),
 
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
@@ -379,7 +382,7 @@ class _PostCardState extends State<PostCard> {
 
                     Flexible(
                       child: InkWell(
-                        onTap: () {},
+                        onTap: () => context.push('/report-detail', extra: widget.post),
                         borderRadius: BorderRadius.circular(8),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
@@ -446,22 +449,31 @@ class _PostCardState extends State<PostCard> {
                 ),
                 const SizedBox(height: 14),
 
-                Text(
-                  widget.post.title,
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 6),
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => context.push('/report-detail', extra: widget.post),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.post.title,
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
 
-                Text(
-                  widget.post.description,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: colorScheme.onSurfaceVariant,
-                    height: 1.35,
+                      Text(
+                        widget.post.description,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: colorScheme.onSurfaceVariant,
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],

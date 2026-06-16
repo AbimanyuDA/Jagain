@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../../core/storage/minio_storage_service.dart';
 import '../../auth/domain/user_model.dart';
 import '../domain/models/report_post.dart';
+import '../domain/models/report_update.dart';
 
 enum VoteAction { upvote, downvote }
 
@@ -68,6 +69,54 @@ class ReportRepository {
     final doc = await _reports.doc(reportId).get();
     if (!doc.exists || doc.data() == null) return null;
     return _mapToReportPost(doc, currentUserId);
+  }
+
+  /// Stream of status updates for a report (subcollection `updates`).
+  Stream<List<ReportUpdate>> watchUpdates(String reportId) {
+    return _reports
+        .doc(reportId)
+        .collection('updates')
+        .orderBy('createdAt', descending: false)
+        .snapshots()
+        .map(
+          (snap) => snap.docs
+              .map((d) => ReportUpdate.fromMap(d.id, d.data()))
+              .toList(),
+        );
+  }
+
+  /// Returns the set of validation type this user has already cast.
+  Future<String?> getUserValidation(String reportId, String userId) async {
+    final doc = await _reports
+        .doc(reportId)
+        .collection('validations')
+        .doc(userId)
+        .get();
+    if (!doc.exists) return null;
+    return doc.data()?['type'] as String?;
+  }
+
+  /// Submits or updates a validation from [userId] for this report.
+  /// type: 'darurat' | 'berisiko' | 'mengganggu'
+  Future<void> submitValidation({
+    required String reportId,
+    required String userId,
+    required String type,
+  }) async {
+    await _reports
+        .doc(reportId)
+        .collection('validations')
+        .doc(userId)
+        .set({'type': type, 'createdAt': FieldValue.serverTimestamp()});
+  }
+
+  /// Real-time count of all validations for a report.
+  Stream<int> watchValidationCount(String reportId) {
+    return _reports
+        .doc(reportId)
+        .collection('validations')
+        .snapshots()
+        .map((snap) => snap.size);
   }
 
   Future<void> toggleVote({
@@ -147,6 +196,15 @@ class ReportRepository {
       'updatedAt': Timestamp.fromDate(now),
     });
 
+    // Auto-create first timeline entry "Reported"
+    await docRef.collection('updates').add({
+      'title': 'Laporan Dibuat',
+      'description':
+          'Laporan diterima dan sedang menunggu review dari moderator.',
+      'isDone': true,
+      'createdAt': Timestamp.fromDate(now),
+    });
+
     return docRef.id;
   }
 
@@ -166,6 +224,9 @@ class ReportRepository {
     final upvoters = List<String>.from(data['upvoterIds'] ?? const []);
     final downvoters = List<String>.from(data['downvoterIds'] ?? const []);
     final imageUrls = List<String>.from(data['imageUrls'] ?? const []);
+
+    // Parse GeoPoint for validation proximity check
+    final geoPoint = data['location'] as GeoPoint?;
 
     return ReportPost(
       id: doc.id,
@@ -187,6 +248,8 @@ class ReportRepository {
       repliesCount: (data['commentCount'] as int?) ?? 0,
       isUpvoted: currentUserId != null && upvoters.contains(currentUserId),
       isDownvoted: currentUserId != null && downvoters.contains(currentUserId),
+      latitude: geoPoint?.latitude,
+      longitude: geoPoint?.longitude,
     );
   }
 }
