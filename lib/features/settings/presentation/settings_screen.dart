@@ -35,6 +35,9 @@ class SettingsScreen extends StatelessWidget {
           final isCitizen = user.role == UserRole.citizen;
           final isPendingOfficial =
               user.role == UserRole.official && !user.isVerified;
+          final isAdmin = user.role == UserRole.admin;
+          final isVerifiedOfficial =
+              user.role == UserRole.official && user.isVerified;
 
           return ListView(
             padding: const EdgeInsets.all(16),
@@ -94,6 +97,22 @@ class SettingsScreen extends StatelessWidget {
                 ),
               ),
 
+              const SizedBox(height: 8),
+
+              // ── Tombol Edit Profil ──
+              Card(
+                child: ListTile(
+                  leading: const Icon(
+                    Icons.edit_outlined,
+                    color: Color(0xFF1B3564),
+                  ),
+                  title: const Text('Edit Profil'),
+                  subtitle: const Text('Ubah nama, foto, dan data akun'),
+                  trailing: const Icon(Icons.chevron_right),
+                  onTap: () => context.push(AppRoutes.editProfile),
+                ),
+              ),
+
               const SizedBox(height: 12),
 
               // ── Role Badge ──
@@ -137,6 +156,44 @@ class SettingsScreen extends StatelessWidget {
               ),
 
               const SizedBox(height: 12),
+
+              // ── Dashboard Admin (hanya admin) ──
+              if (isAdmin) ...[
+                Card(
+                  child: ListTile(
+                    leading: const Icon(
+                      Icons.admin_panel_settings,
+                      color: Colors.red,
+                    ),
+                    title: const Text('Dashboard Admin'),
+                    subtitle: const Text(
+                      'Kelola pengajuan pejabat, kategori, dan laporan',
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => context.push(AppRoutes.adminDashboard),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+
+              // ── Dashboard Pejabat (hanya pejabat terverifikasi) ──
+              if (isVerifiedOfficial) ...[
+                Card(
+                  child: ListTile(
+                    leading: const Icon(
+                      Icons.dashboard_customize,
+                      color: Colors.blue,
+                    ),
+                    title: const Text('Dashboard Pejabat'),
+                    subtitle: const Text(
+                      'Lihat laporan dan statistik wilayah kerja',
+                    ),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => context.push(AppRoutes.pejabatDashboard),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
 
               // ── Ajukan Pejabat (hanya citizen) ──
               if (isCitizen)
