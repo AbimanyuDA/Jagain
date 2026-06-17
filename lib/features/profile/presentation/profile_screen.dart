@@ -1,4 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -346,7 +345,11 @@ class _ProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
                             : Icons.more_horiz_rounded,
                         color: const Color(0xFF0F1E36),
                       ),
-                      onPressed: () {},
+                      onPressed: () {
+                        if (isOwnProfile) {
+                          context.push('/settings');
+                        }
+                      },
                       padding: EdgeInsets.zero,
                       constraints: const BoxConstraints(),
                     ),
@@ -476,7 +479,7 @@ class _ProfileHeaderDelegate extends SliverPersistentHeaderDelegate {
                           context.read<ProfileBloc>().add(LoadProfile(username: username));
                         },
                       );
-                    }).toList(),
+                    }),
                   
                   const Divider(),
                   

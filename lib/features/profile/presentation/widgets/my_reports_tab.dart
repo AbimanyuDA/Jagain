@@ -21,7 +21,7 @@ class MyReportsTab extends StatelessWidget {
     return ListView.separated(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 80),
       itemCount: reports.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      separatorBuilder: (_, _) => const SizedBox(height: 12),
       itemBuilder: (context, index) {
         final report = reports[index];
         return _MyReportCard(report: report);
@@ -68,7 +68,7 @@ class _MyReportCard extends StatelessWidget {
                   ? Image.network(
                       report.imageUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
+                      errorBuilder: (_, _, _) => Container(
                         color: Colors.grey.shade200,
                         child: const Icon(
                           Icons.broken_image_outlined,
