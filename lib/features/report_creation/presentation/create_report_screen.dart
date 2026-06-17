@@ -15,8 +15,11 @@ import '../../auth/presentation/bloc/auth_state.dart';
 import 'bloc/create_report_bloc.dart';
 import 'bloc/create_report_event.dart';
 import 'bloc/create_report_state.dart';
+import '../../admin_panel/data/admin_repository.dart';
+import '../../../core/data/indonesia_regions.dart';
+import '../../../core/widgets/region_selector_bottom_sheet.dart';
 
-const _categories = ['JALAN', 'PJU', 'DRAINASE', 'TROTOAR', 'POHON', 'LAINNYA'];
+const _fallbackCategories = ['JALAN', 'PJU', 'DRAINASE', 'TROTOAR', 'POHON', 'LAINNYA'];
 const _urgencyLevels = ['NORMAL', 'URGENT'];
 const _defaultLocation = LatLng(-6.2088, 106.8456);
 
@@ -43,12 +46,16 @@ class _CreateReportViewState extends State<_CreateReportView> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _wilayahController = TextEditingController();
   final _picker = ImagePicker();
 
   final List<File> _images = [];
-  String _category = _categories.first;
+  List<String> _categories = _fallbackCategories;
+  String _category = _fallbackCategories.first;
   String _urgency = _urgencyLevels.first;
+
+  // Wilayah region selector state
+  String? _selectedProvinsi;
+  String? _selectedKota;
 
   LatLng? _selectedLocation;
   String? _confirmedAddress;
@@ -59,13 +66,33 @@ class _CreateReportViewState extends State<_CreateReportView> {
   void initState() {
     super.initState();
     _getCurrentLocation();
+    _loadCategories();
+  }
+
+  Future<void> _loadCategories() async {
+    try {
+      final repo = AdminRepository();
+      repo.watchCategories().first.then((items) {
+        final active = items
+            .where((c) => c.isActive)
+            .map((c) => c.name)
+            .toList();
+        if (active.isNotEmpty && mounted) {
+          setState(() {
+            _categories = active;
+            _category = active.first;
+          });
+        }
+      });
+    } catch (_) {
+      // Gunakan fallback hardcoded jika Firestore gagal
+    }
   }
 
   @override
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
-    _wilayahController.dispose();
     super.dispose();
   }
 
@@ -198,6 +225,40 @@ class _CreateReportViewState extends State<_CreateReportView> {
     });
   }
 
+  Future<void> _pickProvinsi() async {
+    final result = await showRegionSelectorSheet(
+      context: context,
+      title: 'Pilih Provinsi',
+      items: IndonesiaRegions.provinsi,
+      selected: _selectedProvinsi,
+    );
+    if (result != null) {
+      setState(() {
+        _selectedProvinsi = result;
+        _selectedKota = null;
+      });
+    }
+  }
+
+  Future<void> _pickKota() async {
+    if (_selectedProvinsi == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Pilih provinsi terlebih dahulu')),
+      );
+      return;
+    }
+    final kota = IndonesiaRegions.getKota(_selectedProvinsi!);
+    final result = await showRegionSelectorSheet(
+      context: context,
+      title: 'Pilih Kota / Kabupaten',
+      items: kota,
+      selected: _selectedKota,
+    );
+    if (result != null) {
+      setState(() => _selectedKota = result);
+    }
+  }
+
   void _submit(UserModel author) {
     if (!_formKey.currentState!.validate()) return;
 
@@ -217,6 +278,18 @@ class _CreateReportViewState extends State<_CreateReportView> {
       return;
     }
 
+    if (_selectedKota == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Pilih kota / kabupaten laporan terlebih dahulu.'),
+        ),
+      );
+      return;
+    }
+
+    // Format: "Kota Surabaya -> Jawa Timur -> Pusat"
+    final wilayah = '${_selectedKota!} -> ${_selectedProvinsi!} -> Pusat';
+
     context.read<CreateReportBloc>().add(
       SubmitReportRequested(
         author: author,
@@ -227,7 +300,7 @@ class _CreateReportViewState extends State<_CreateReportView> {
         images: _images,
         latitude: _selectedLocation!.latitude,
         longitude: _selectedLocation!.longitude,
-        wilayah: _wilayahController.text.trim(),
+        wilayah: wilayah,
       ),
     );
   }
@@ -338,18 +411,7 @@ class _CreateReportViewState extends State<_CreateReportView> {
                         ],
                       ),
                       const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _wilayahController,
-                        decoration: const InputDecoration(
-                          labelText: 'Wilayah / Kota (contoh: Surabaya)',
-                          helperText:
-                              'Dipakai untuk meneruskan laporan ke pejabat wilayah terkait',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (val) => (val == null || val.trim().isEmpty)
-                            ? 'Wilayah wajib diisi'
-                            : null,
-                      ),
+                      _buildWilayahSelector(),
                       const SizedBox(height: 16),
                       _buildLocationPicker(),
                       const SizedBox(height: 32),
@@ -455,6 +517,136 @@ class _CreateReportViewState extends State<_CreateReportView> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildWilayahSelector() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Wilayah Laporan',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Dipakai untuk meneruskan laporan ke pejabat wilayah terkait',
+          style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+        ),
+        const SizedBox(height: 10),
+
+        // Provinsi
+        const Text(
+          'Provinsi',
+          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+        ),
+        const SizedBox(height: 6),
+        _buildRegionTile(
+          icon: Icons.map_outlined,
+          label: _selectedProvinsi ?? 'Pilih Provinsi',
+          isPlaceholder: _selectedProvinsi == null,
+          onTap: _pickProvinsi,
+        ),
+
+        const SizedBox(height: 12),
+
+        // Kota / Kabupaten
+        const Text(
+          'Kota / Kabupaten',
+          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+        ),
+        const SizedBox(height: 6),
+        _buildRegionTile(
+          icon: Icons.location_city_outlined,
+          label: _selectedKota ?? 'Pilih Kota / Kabupaten',
+          isPlaceholder: _selectedKota == null,
+          onTap: _pickKota,
+          disabled: _selectedProvinsi == null,
+        ),
+
+        // Preview
+        if (_selectedKota != null) ...[
+          const SizedBox(height: 10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              border: Border.all(color: Colors.blue.shade200),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.route, color: Colors.blue.shade700, size: 16),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '${_selectedKota!} → ${_selectedProvinsi!} → Pusat',
+                    style: TextStyle(
+                        fontSize: 12, color: Colors.blue.shade900),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildRegionTile({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    bool isPlaceholder = false,
+    bool disabled = false,
+  }) {
+    return InkWell(
+      onTap: disabled ? null : onTap,
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: disabled
+                ? Colors.grey.shade300
+                : isPlaceholder
+                    ? Colors.grey.shade400
+                    : const Color(0xFF1B3564),
+          ),
+          borderRadius: BorderRadius.circular(8),
+          color: disabled ? Colors.grey.shade100 : Colors.white,
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: disabled
+                  ? Colors.grey.shade400
+                  : isPlaceholder
+                      ? Colors.grey.shade500
+                      : const Color(0xFF1B3564),
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: disabled
+                      ? Colors.grey.shade400
+                      : isPlaceholder
+                          ? Colors.grey.shade500
+                          : Colors.black87,
+                ),
+              ),
+            ),
+            Icon(Icons.arrow_drop_down,
+                color: disabled
+                    ? Colors.grey.shade400
+                    : Colors.grey.shade600),
+          ],
+        ),
+      ),
     );
   }
 
