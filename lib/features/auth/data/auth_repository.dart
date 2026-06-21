@@ -89,6 +89,25 @@ class AuthRepository {
     await _auth.signOut();
   }
 
+  /// Mengajukan upgrade role citizen → official (belum terverifikasi).
+  /// Admin akan melihat pengajuan ini di /admin/officials.
+  Future<UserModel> requestUpgradeToOfficial({
+    required String uid,
+    required String wilayah,
+  }) async {
+    await _firestore.collection('users').doc(uid).update({
+      'role': UserRole.official.name,
+      'isVerified': false,
+      'wilayah': wilayah,
+    });
+
+    final updated = await getUser(uid);
+    if (updated == null) {
+      throw Exception('Gagal memuat data user setelah pengajuan.');
+    }
+    return updated;
+  }
+
   Future<UserModel?> getUser(String uid) async {
     try {
       final doc = await _firestore.collection('users').doc(uid).get();

@@ -91,7 +91,7 @@ class _SystemAnalyticsScreenState extends State<SystemAnalyticsScreen> {
                 crossAxisCount: 2,
                 crossAxisSpacing: 16,
                 mainAxisSpacing: 16,
-                childAspectRatio: 1.3,
+                childAspectRatio: 1.15,
               ),
               itemCount: cards.length,
               itemBuilder: (context, index) {
@@ -99,7 +99,7 @@ class _SystemAnalyticsScreenState extends State<SystemAnalyticsScreen> {
                 return Card(
                   elevation: 1,
                   child: Padding(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(12),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [

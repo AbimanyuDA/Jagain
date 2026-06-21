@@ -18,6 +18,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     on<AuthLogoutRequested>(_onAuthLogoutRequested);
     on<AuthUserRefreshed>(_onAuthUserRefreshed);
     on<AuthSwitchAccountRequested>(_onAuthSwitchAccountRequested);
+    on<AuthUpgradeToOfficialRequested>(_onUpgradeToOfficial);
   }
 
   void _onAuthCheckRequested(
@@ -50,7 +51,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await SessionManager.addSession(user, email: event.email, password: event.password);
       emit(AuthAuthenticated(user: user));
     } catch (e) {
-      emit(AuthError(e.toString()));
+      emit(const AuthError('Email atau password salah.'));
     }
   }
 
@@ -110,7 +111,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final session = sessions.firstWhere((s) => s['uid'] == event.uid);
       final email = session['email'];
       final password = session['password'];
-      
+
       if (email != null && password != null) {
         final user = await _repository.signIn(email: email, password: password);
         await SessionManager.addSession(user, email: email, password: password);
@@ -120,6 +121,27 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     } catch (e) {
       emit(AuthError('Gagal berganti akun: ${e.toString()}'));
+    }
+  }
+
+  void _onUpgradeToOfficial(
+    AuthUpgradeToOfficialRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    final currentState = state;
+    if (currentState is! AuthAuthenticated) return;
+
+    emit(AuthLoading());
+    try {
+      final updatedUser = await _repository.requestUpgradeToOfficial(
+        uid: currentState.user.uid,
+        wilayah: event.wilayah,
+      );
+      emit(AuthAuthenticated(user: updatedUser));
+    } catch (e) {
+      // Kembalikan state sebelumnya + emit error
+      emit(AuthAuthenticated(user: currentState.user));
+      emit(AuthError(e.toString()));
     }
   }
 

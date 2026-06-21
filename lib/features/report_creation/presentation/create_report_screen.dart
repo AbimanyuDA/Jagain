@@ -19,8 +19,9 @@ import '../../../core/utils/image_compressor.dart';
 import 'bloc/create_report_bloc.dart';
 import 'bloc/create_report_event.dart';
 import 'bloc/create_report_state.dart';
+import '../../admin_panel/data/admin_repository.dart';
 
-const _categories = ['JALAN', 'PJU', 'DRAINASE', 'TROTOAR', 'POHON', 'LAINNYA'];
+const _fallbackCategories = ['JALAN', 'PJU', 'DRAINASE', 'TROTOAR', 'POHON', 'LAINNYA'];
 const _urgencyLevels = ['NORMAL', 'URGENT'];
 const _defaultLocation = LatLng(-6.2088, 106.8456);
 
@@ -52,7 +53,8 @@ class _CreateReportViewState extends State<_CreateReportView> {
   final _picker = ImagePicker();
 
   final List<File> _images = [];
-  String _category = _categories.first;
+  List<String> _categories = _fallbackCategories;
+  String _category = _fallbackCategories.first;
   String _urgency = _urgencyLevels.first;
 
 
@@ -66,6 +68,27 @@ class _CreateReportViewState extends State<_CreateReportView> {
   void initState() {
     super.initState();
     _getCurrentLocation();
+    _loadCategories();
+  }
+
+  Future<void> _loadCategories() async {
+    try {
+      final repo = AdminRepository();
+      repo.watchCategories().first.then((items) {
+        final active = items
+            .where((c) => c.isActive)
+            .map((c) => c.name)
+            .toList();
+        if (active.isNotEmpty && mounted) {
+          setState(() {
+            _categories = active;
+            _category = active.first;
+          });
+        }
+      });
+    } catch (_) {
+      // Gunakan fallback hardcoded jika Firestore gagal
+    }
   }
 
   @override

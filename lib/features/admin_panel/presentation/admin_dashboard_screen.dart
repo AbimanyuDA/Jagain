@@ -44,6 +44,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               padding: const EdgeInsets.all(16.0),
               crossAxisSpacing: 16.0,
               mainAxisSpacing: 16.0,
+              childAspectRatio: 0.85,
               children: [
                 _buildAdminCard(
                   context,

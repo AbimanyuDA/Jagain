@@ -38,12 +38,15 @@ class ReportRepository {
   }) {
     return _reports
         .where('wilayah', isEqualTo: wilayah)
-        .orderBy('createdAt', descending: true)
         .snapshots()
         .map(
-          (snapshot) => snapshot.docs
-              .map((doc) => _mapToReportPost(doc, currentUserId))
-              .toList(),
+          (snapshot) {
+            final posts = snapshot.docs
+                .map((doc) => _mapToReportPost(doc, currentUserId))
+                .toList();
+            posts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+            return posts;
+          },
         );
   }
 
@@ -53,14 +56,65 @@ class ReportRepository {
   }) {
     return _reports
         .where('status', isEqualTo: status.key)
-        .orderBy('createdAt', descending: true)
         .snapshots()
         .map(
-          (snapshot) => snapshot.docs
-              .map((doc) => _mapToReportPost(doc, currentUserId))
-              .toList(),
+          (snapshot) {
+            final posts = snapshot.docs
+                .map((doc) => _mapToReportPost(doc, currentUserId))
+                .toList();
+            posts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+            return posts;
+          },
         );
   }
+
+  /// Laporan berdasarkan wilayah pejabat, dengan optional filter status
+  Stream<List<ReportPost>> watchReportsByWilayahFiltered(
+    String wilayah, {
+    ReportPostStatus? status,
+    String? currentUserId,
+  }) {
+    // Wildcard match: pejabat kota mendapat laporan kecamatannya juga
+    // Gunakan prefix matching di client side setelah fetch by wilayah field
+    Query<Map<String, dynamic>> query = _reports;
+
+    if (status != null) {
+      query = query.where('status', isEqualTo: status.key);
+    }
+
+    return query.snapshots().map((snapshot) {
+      final posts = snapshot.docs
+          .map((doc) => _mapToReportPost(doc, currentUserId))
+          .where((post) {
+            // Cocokkan semua laporan yang wilayahnya mengandung wilayah pejabat
+            // Contoh: pejabat "Kota Surabaya -> Jawa Timur -> Pusat"
+            // akan melihat laporan dari Kecamatan X -> Kota Surabaya -> ...
+            return post.wilayah.contains(wilayah) || post.wilayah == wilayah;
+          })
+          .toList();
+      posts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return posts;
+    });
+  }
+
+  /// Update status laporan oleh pejabat
+  Future<void> updateReportStatus({
+    required String reportId,
+    required ReportPostStatus newStatus,
+    String? officialNote,
+  }) async {
+    final now = DateTime.now();
+    final updateData = <String, dynamic>{
+      'status': newStatus.key,
+      'updatedAt': Timestamp.fromDate(now),
+      'statusUpdateCount': FieldValue.increment(1),
+    };
+    if (officialNote != null && officialNote.isNotEmpty) {
+      updateData['officialNote'] = officialNote;
+    }
+    await _reports.doc(reportId).update(updateData);
+  }
+
 
   Future<ReportPost?> getReportById(
     String reportId, {
