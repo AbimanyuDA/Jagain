@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -95,7 +96,7 @@ class ProfileHeader extends StatelessWidget {
                   radius: 42,
                   backgroundColor: colorScheme.surfaceContainer,
                   backgroundImage: profile.avatarUrl.isNotEmpty
-                      ? NetworkImage(profile.avatarUrl)
+                      ? CachedNetworkImageProvider(profile.avatarUrl)
                       : null,
                   child: profile.avatarUrl.isEmpty
                       ? Text(

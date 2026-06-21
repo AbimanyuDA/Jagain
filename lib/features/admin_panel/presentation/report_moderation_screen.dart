@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../../../../core/widgets/app_network_image.dart';
 import '../../feed/domain/models/report_post.dart';
 import '../data/admin_repository.dart';
 
@@ -85,8 +86,8 @@ class _ReportModerationScreenState extends State<ReportModerationScreen> {
                           if (report.imageUrl.isNotEmpty)
                             ClipRRect(
                               borderRadius: BorderRadius.circular(8),
-                              child: Image.network(
-                                report.imageUrl,
+                              child: AppNetworkImage(
+                                url: report.imageUrl,
                                 width: 56,
                                 height: 56,
                                 fit: BoxFit.cover,

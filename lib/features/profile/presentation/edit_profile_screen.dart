@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -260,7 +261,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     final avatarImage = _avatarFile != null
         ? FileImage(_avatarFile!) as ImageProvider
-        : (user.avatarUrl.isNotEmpty ? NetworkImage(user.avatarUrl) : null);
+        : (user.avatarUrl.isNotEmpty
+            ? CachedNetworkImageProvider(user.avatarUrl)
+            : null);
 
     return Scaffold(
       appBar: AppBar(title: const Text('Edit Profil')),

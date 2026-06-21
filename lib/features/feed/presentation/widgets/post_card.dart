@@ -1,8 +1,10 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../../../core/widgets/app_network_image.dart';
 import '../../../auth/domain/user_model.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
@@ -125,7 +127,7 @@ class _PostCardState extends State<PostCard> {
                           radius: 20,
                           backgroundColor: colorScheme.surfaceContainer,
                           backgroundImage: displayUserAvatar.isNotEmpty
-                              ? NetworkImage(displayUserAvatar)
+                              ? CachedNetworkImageProvider(displayUserAvatar)
                               : null,
                           child: displayUserAvatar.isEmpty
                               ? Icon(Icons.person,
@@ -194,43 +196,72 @@ class _PostCardState extends State<PostCard> {
             ),
           ),
 
-          AspectRatio(
-            aspectRatio: 4 / 5,
-            child: Stack(
+          GestureDetector(
+            onTap: () => context.push('/report-detail', extra: widget.post),
+            child: AspectRatio(
+              aspectRatio: 4 / 5,
+              child: Stack(
               children: [
                 if (widget.post.imageUrls != null &&
                     widget.post.imageUrls!.length > 1)
-                  PageView.builder(
-                    itemCount: widget.post.imageUrls!.length,
-                    onPageChanged: (index) {
-                      setState(() {
-                        _currentImageIndex = index;
-                      });
+                  GestureDetector(
+                    // Claim horizontal drag early so the inner image swipe
+                    // is handled here, not by the outer navigation PageView.
+                    onHorizontalDragEnd: (details) {
+                      final velocity = details.primaryVelocity ?? 0;
+                      if (velocity < -300 &&
+                          _currentImageIndex <
+                              widget.post.imageUrls!.length - 1) {
+                        setState(() => _currentImageIndex++);
+                      } else if (velocity > 300 && _currentImageIndex > 0) {
+                        setState(() => _currentImageIndex--);
+                      }
                     },
-                    itemBuilder: (context, index) {
-                      return widget.post.imageUrls![index].isNotEmpty
-                          ? Image.network(
-                              widget.post.imageUrls![index],
-                              width: double.infinity,
-                              height: double.infinity,
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  _brokenImagePlaceholder(colorScheme),
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 220),
+                      transitionBuilder: (child, animation) {
+                        final isForward = (child.key as ValueKey<int>).value >=
+                            _currentImageIndex;
+                        final begin =
+                            Offset(isForward ? 1.0 : -1.0, 0.0);
+                        return SlideTransition(
+                          position: Tween<Offset>(
+                            begin: begin,
+                            end: Offset.zero,
+                          ).animate(CurvedAnimation(
+                            parent: animation,
+                            curve: Curves.easeOut,
+                          )),
+                          child: child,
+                        );
+                      },
+                      child: widget.post.imageUrls![_currentImageIndex]
+                              .isNotEmpty
+                          ? KeyedSubtree(
+                              key: ValueKey(_currentImageIndex),
+                              child: AppNetworkImage(
+                                url: widget.post.imageUrls![_currentImageIndex],
+                                width: double.infinity,
+                                height: double.infinity,
+                                fit: BoxFit.cover,
+                              ),
                             )
-                          : _brokenImagePlaceholder(colorScheme);
-                    },
+                          : KeyedSubtree(
+                              key: ValueKey(_currentImageIndex),
+                              child: _brokenImagePlaceholder(colorScheme),
+                            ),
+                    ),
                   )
                 else
                   widget.post.imageUrl.isNotEmpty
-                      ? Image.network(
-                          widget.post.imageUrl,
+                      ? AppNetworkImage(
+                          url: widget.post.imageUrl,
                           width: double.infinity,
                           height: double.infinity,
                           fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              _brokenImagePlaceholder(colorScheme),
                         )
                       : _brokenImagePlaceholder(colorScheme),
+
 
                 Positioned(
                   top: 12,
@@ -291,6 +322,7 @@ class _PostCardState extends State<PostCard> {
               ],
             ),
           ),
+        ),
 
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
@@ -350,7 +382,7 @@ class _PostCardState extends State<PostCard> {
 
                     Flexible(
                       child: InkWell(
-                        onTap: () {},
+                        onTap: () => context.push('/report-detail', extra: widget.post),
                         borderRadius: BorderRadius.circular(8),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
@@ -417,22 +449,31 @@ class _PostCardState extends State<PostCard> {
                 ),
                 const SizedBox(height: 14),
 
-                Text(
-                  widget.post.title,
-                  style: TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                    color: colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: 6),
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => context.push('/report-detail', extra: widget.post),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.post.title,
+                        style: TextStyle(
+                          fontSize: 17,
+                          fontWeight: FontWeight.bold,
+                          color: colorScheme.onSurface,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
 
-                Text(
-                  widget.post.description,
-                  style: TextStyle(
-                    fontSize: 14,
-                    color: colorScheme.onSurfaceVariant,
-                    height: 1.35,
+                      Text(
+                        widget.post.description,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: colorScheme.onSurfaceVariant,
+                          height: 1.35,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -609,7 +650,7 @@ class _CommentSheetContentState extends State<_CommentSheetContent> {
                             radius: 16,
                             backgroundColor: colorScheme.surfaceContainer,
                             backgroundImage: commentAuthorAvatar.isNotEmpty
-                                ? NetworkImage(commentAuthorAvatar)
+                                ? CachedNetworkImageProvider(commentAuthorAvatar)
                                 : null,
                             child: commentAuthorAvatar.isEmpty
                                 ? Text(
@@ -756,7 +797,7 @@ class _CommentSheetContentState extends State<_CommentSheetContent> {
                   backgroundColor: colorScheme.surfaceContainer,
                   backgroundImage:
                       (currentUser?.avatarUrl.isNotEmpty ?? false)
-                          ? NetworkImage(currentUser!.avatarUrl)
+                          ? CachedNetworkImageProvider(currentUser!.avatarUrl)
                           : null,
                   child: (currentUser?.avatarUrl.isEmpty ?? true)
                       ? Text(

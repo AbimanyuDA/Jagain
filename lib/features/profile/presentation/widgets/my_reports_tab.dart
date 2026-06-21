@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../../core/widgets/app_network_image.dart';
 import '../../domain/models/user_profile.dart';
 import 'profile_theme.dart';
 
@@ -65,16 +66,11 @@ class _MyReportCard extends StatelessWidget {
               width: 100,
               height: 110,
               child: report.imageUrl.isNotEmpty
-                  ? Image.network(
-                      report.imageUrl,
+                  ? AppNetworkImage(
+                      url: report.imageUrl,
+                      width: 100,
+                      height: 110,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(
-                        color: Colors.grey.shade200,
-                        child: const Icon(
-                          Icons.broken_image_outlined,
-                          color: Colors.grey,
-                        ),
-                      ),
                     )
                   : Container(
                       color: Colors.grey.shade200,

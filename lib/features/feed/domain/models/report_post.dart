@@ -65,6 +65,10 @@ class ReportPost {
   final bool isUpvoted;
   final bool isDownvoted;
 
+  // Location coordinates for validation feature
+  final double? latitude;
+  final double? longitude;
+
   const ReportPost({
     required this.id,
     required this.authorId,
@@ -85,6 +89,8 @@ class ReportPost {
     required this.repliesCount,
     this.isUpvoted = false,
     this.isDownvoted = false,
+    this.latitude,
+    this.longitude,
   });
 
   String get timeAgo => timeAgoText(createdAt);
@@ -115,6 +121,8 @@ class ReportPost {
       repliesCount: repliesCount ?? this.repliesCount,
       isUpvoted: isUpvoted ?? this.isUpvoted,
       isDownvoted: isDownvoted ?? this.isDownvoted,
+      latitude: latitude,
+      longitude: longitude,
     );
   }
 }
