@@ -189,4 +189,90 @@ class ReportRepository {
       isDownvoted: currentUserId != null && downvoters.contains(currentUserId),
     );
   }
+
+  Future<int> countByStatus(ReportPostStatus status) async {
+    final result = await _reports
+        .where('status', isEqualTo: status.key)
+        .count()
+        .get();
+    return result.count ?? 0;
+  }
+
+  Future<int> countStuck({int days = 7}) async {
+    final cutoff = Timestamp.fromDate(
+      DateTime.now().subtract(Duration(days: days)),
+    );
+    final result = await _reports
+        .where('status', whereIn: ['waiting_review', 'in_progress'])
+        .where('updatedAt', isLessThan: cutoff)
+        .count()
+        .get();
+    return result.count ?? 0;
+  }
+
+  Future<List<ReportPost>> getStuck({
+    int days = 7,
+    int limit = 5,
+    String? currentUserId,
+  }) async {
+    final cutoff = Timestamp.fromDate(
+      DateTime.now().subtract(Duration(days: days)),
+    );
+    final snapshot = await _reports
+        .where('status', whereIn: ['waiting_review', 'in_progress'])
+        .where('updatedAt', isLessThan: cutoff)
+        .orderBy('updatedAt')
+        .limit(limit)
+        .get();
+    return snapshot.docs
+        .map((doc) => _mapToReportPost(doc, currentUserId))
+        .toList();
+  }
+
+  Future<int> countByStatusAndWilayah(
+    ReportPostStatus status,
+    String wilayah,
+  ) async {
+    final result = await _reports
+        .where('wilayah', isEqualTo: wilayah)
+        .where('status', isEqualTo: status.key)
+        .count()
+        .get();
+    return result.count ?? 0;
+  }
+
+  Future<int> countStuckByWilayah(String wilayah, {int days = 7}) async {
+    final cutoff = Timestamp.fromDate(
+      DateTime.now().subtract(Duration(days: days)),
+    );
+    final result = await _reports
+        .where('wilayah', isEqualTo: wilayah)
+        .where('status', whereIn: ['waiting_review', 'in_progress'])
+        .where('updatedAt', isLessThan: cutoff)
+        .count()
+        .get();
+    return result.count ?? 0;
+  }
+
+  Future<List<ReportPost>> getStuckByWilayah(
+    String wilayah, {
+    int days = 7,
+    int limit = 5,
+    String? currentUserId,
+  }) async {
+    final cutoff = Timestamp.fromDate(
+      DateTime.now().subtract(Duration(days: days)),
+    );
+    final snapshot = await _reports
+        .where('wilayah', isEqualTo: wilayah)
+        .where('status', whereIn: ['waiting_review', 'in_progress'])
+        .where('updatedAt', isLessThan: cutoff)
+        .orderBy('updatedAt')
+        .limit(limit)
+        .get();
+    return snapshot.docs
+        .map((doc) => _mapToReportPost(doc, currentUserId))
+        .toList();
+  }
+
 }
