@@ -7,6 +7,8 @@ import 'bloc/feed_event.dart';
 import 'bloc/feed_state.dart';
 import 'widgets/post_card.dart';
 import '../../profile/presentation/profile_screen.dart';
+import '../../near_me/presentation/near_me_screen.dart';
+import '../../stats/presentation/stats_screen.dart';
 
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
@@ -138,11 +140,9 @@ class _FeedScreenState extends State<FeedScreen> {
               },
             ),
 
-            const Center(
-              child: Text('Halaman Near Me (Peta Laporan Terdekat)'),
-            ),
+            const NearMeScreen(),
 
-            const Center(child: Text('Halaman Statistik & Grafik Laporan')),
+            const StatsScreen(),
 
             const ProfileScreen(),
           ],
