@@ -207,22 +207,7 @@ class _ProfileViewState extends State<_ProfileView>
   }
 
   void _showOwnProfileSettings(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final authBloc = context.read<AuthBloc>();
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: colorScheme.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (sheetContext) {
-        return BlocProvider.value(
-          value: authBloc,
-          child: const _ProfileSettingsSheet(),
-        );
-      },
-    );
+    context.push('/settings');
   }
 
   @override
@@ -442,87 +427,4 @@ class _TabItem {
   final String label;
   final IconData icon;
   const _TabItem({required this.label, required this.icon});
-}
-
-
-// ── Settings bottom sheet ────────────────────────────────────────────────────
-
-class _ProfileSettingsSheet extends StatelessWidget {
-  const _ProfileSettingsSheet();
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 8),
-            Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: colorScheme.outlineVariant,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Pengaturan',
-                  style: TextStyle(
-                    color: colorScheme.onSurface,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 4),
-
-            ListTile(
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 20),
-              leading: Icon(Icons.edit_outlined,
-                  color: colorScheme.onSurface),
-              title: Text(
-                'Edit Profil',
-                style: TextStyle(
-                    color: colorScheme.onSurface,
-                    fontWeight: FontWeight.w500,
-                    fontSize: 15),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                context.push('/edit-profile');
-              },
-            ),
-            ListTile(
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 20),
-              leading:
-                  const Icon(Icons.logout_rounded, color: Colors.red),
-              title: const Text(
-                'Keluar',
-                style: TextStyle(
-                    color: Colors.red,
-                    fontWeight: FontWeight.w500,
-                    fontSize: 15),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                context.read<AuthBloc>().add(AuthLogoutRequested());
-              },
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
 }

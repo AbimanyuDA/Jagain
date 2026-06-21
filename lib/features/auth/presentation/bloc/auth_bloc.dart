@@ -91,6 +91,27 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
+  void _onUpgradeToOfficial(
+    AuthUpgradeToOfficialRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    final currentState = state;
+    if (currentState is! AuthAuthenticated) return;
+
+    emit(AuthLoading());
+    try {
+      final updatedUser = await _repository.requestUpgradeToOfficial(
+        uid: currentState.user.uid,
+        wilayah: event.wilayah,
+      );
+      emit(AuthAuthenticated(user: updatedUser));
+    } catch (e) {
+      // Kembalikan state sebelumnya + emit error
+      emit(AuthAuthenticated(user: currentState.user));
+      emit(AuthError(e.toString()));
+    }
+  }
+
   void _onAuthUserRefreshed(AuthUserRefreshed event, Emitter<AuthState> emit) async {
     await SessionManager.addSession(event.user);
     emit(AuthAuthenticated(user: event.user));
@@ -121,27 +142,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       }
     } catch (e) {
       emit(AuthError('Gagal berganti akun: ${e.toString()}'));
-    }
-  }
-
-  void _onUpgradeToOfficial(
-    AuthUpgradeToOfficialRequested event,
-    Emitter<AuthState> emit,
-  ) async {
-    final currentState = state;
-    if (currentState is! AuthAuthenticated) return;
-
-    emit(AuthLoading());
-    try {
-      final updatedUser = await _repository.requestUpgradeToOfficial(
-        uid: currentState.user.uid,
-        wilayah: event.wilayah,
-      );
-      emit(AuthAuthenticated(user: updatedUser));
-    } catch (e) {
-      // Kembalikan state sebelumnya + emit error
-      emit(AuthAuthenticated(user: currentState.user));
-      emit(AuthError(e.toString()));
     }
   }
 
