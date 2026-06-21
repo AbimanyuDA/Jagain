@@ -1,7 +1,37 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+
+import '../../auth/presentation/bloc/auth_bloc.dart';
+import '../../auth/presentation/bloc/auth_state.dart';
+import '../../feed/domain/models/report_post.dart';
+import 'bloc/pejabat_dashboard_bloc.dart';
+import 'bloc/pejabat_dashboard_event.dart';
+import 'bloc/pejabat_dashboard_state.dart';
 
 class PejabatDashboardScreen extends StatelessWidget {
   const PejabatDashboardScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) {
+        final bloc = PejabatDashboardBloc();
+        final authState = context.read<AuthBloc>().state;
+        if (authState is AuthAuthenticated) {
+          bloc.add(LoadDashboardStats(
+            pejabatWilayah: authState.user.wilayah ?? 'Pusat',
+            currentUserId: authState.user.uid,
+          ));
+        }
+        return bloc;
+      },
+      child: const _DashboardView(),
+    );
+  }
+}
+
+class _DashboardView extends StatelessWidget {
+  const _DashboardView();
 
   @override
   Widget build(BuildContext context) {
@@ -11,33 +41,40 @@ class PejabatDashboardScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Dashboard Pejabat - Jagain'),
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 16),
-            _buildProfileSection(context),
-            const SizedBox(height: 24),
-            _buildStatsGrid(context),
-            const SizedBox(height: 32),
-            _buildCrisisMapCard(context),
-            const SizedBox(height: 32),
-            _buildKategoriKerusakan(context),
-            const SizedBox(height: 24),
-            _buildTopKecamatan(context),
-            const SizedBox(height: 32),
-            _buildTindakanSegera(context),
-            const SizedBox(height: 100),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          // TODO: implement
+      body: BlocBuilder<PejabatDashboardBloc, PejabatDashboardState>(
+        builder: (context, state) {
+          if (state is PejabatDashboardLoading ||
+              state is PejabatDashboardInitial) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (state is PejabatDashboardError) {
+            return Center(child: Text('Error: ${state.message}'));
+          }
+          final loaded = state as PejabatDashboardLoaded;
+          return SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const SizedBox(height: 16),
+                _buildProfileSection(context),
+                const SizedBox(height: 24),
+                _buildStatsGrid(context, loaded),
+                const SizedBox(height: 24),
+                _buildStatusCounters(context, loaded),
+                const SizedBox(height: 32),
+                _buildCrisisMapCard(context),
+                const SizedBox(height: 32),
+                _buildKategoriKerusakan(context),
+                const SizedBox(height: 24),
+                _buildTopKecamatan(context),
+                const SizedBox(height: 32),
+                _buildTindakanSegera(context, loaded),
+                const SizedBox(height: 100),
+              ],
+            ),
+          );
         },
-        backgroundColor: colorScheme.primary,
-        child: Icon(Icons.add, color: colorScheme.onPrimary),
       ),
     );
   }
@@ -102,10 +139,16 @@ class PejabatDashboardScreen extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(8),
-        border: leftBorderColor != null
-            ? Border(left: BorderSide(color: leftBorderColor, width: 4))
-            : null,
+        border: Border.all(color: colorScheme.outlineVariant),
       ),
+      foregroundDecoration: leftBorderColor != null
+          ? BoxDecoration(
+              borderRadius: BorderRadius.circular(8),
+              border: Border(
+                left: BorderSide(color: leftBorderColor, width: 4),
+              ),
+            )
+          : null,
       child: Row(
         children: [
           Expanded(
@@ -149,32 +192,53 @@ class PejabatDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildStatsGrid(BuildContext context) {
+  Widget _buildStatsGrid(BuildContext context, PejabatDashboardLoaded state) {
     final colorScheme = Theme.of(context).colorScheme;
+    final percentage = (state.completionRate * 100).toStringAsFixed(1);
 
     return Column(
       children: [
-        Row(
-          children: [
-            Expanded(
-              child: _buildStatCard(
-                context: context,
-                label: 'Rerata Respons',
-                value: '1.8 Hari',
-                subtitle: '↓ 0.4 hari lebih cepat',
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  context: context,
+                  label: 'Aduan Stuck',
+                  value: '${state.stuckCount}',
+                  valueColor: const Color(0xFFF59E0B),
+                  leftBorderColor: const Color(0xFFF59E0B),
+                  subtitle: '> 7 hari tanpa update',
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildStatCard(
-                context: context,
-                label: 'Penyelesaian',
-                value: '84.5%',
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatCard(
+                  context: context,
+                  label: 'Laporan Aktif',
+                  value: '${state.activeCount}',
+                  subtitle: 'Total aduan berjalan',
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: _buildStatCard(
+                  context: context,
+                  label: 'Penyelesaian',
+                  value: '$percentage%',
                 trailing: SizedBox(
                   width: 48,
                   height: 48,
                   child: CircularProgressIndicator(
-                    value: 0.845,
+                    value: state.completionRate,
                     strokeWidth: 4,
                     backgroundColor: colorScheme.outlineVariant,
                     valueColor: AlwaysStoppedAnimation(colorScheme.primary),
@@ -182,30 +246,87 @@ class PejabatDashboardScreen extends StatelessWidget {
                 ),
               ),
             ),
+            const SizedBox(width: 12),
+            // Placeholder for FR-1.1 (Rerata Respons)
+            Expanded(
+              child: _buildStatCard(
+                context: context,
+                label: 'Rerata Respons',
+                value: '— ',
+                subtitle: 'Segera hadir',
+              ),
+            ),
           ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatusCounters(
+      BuildContext context, PejabatDashboardLoaded state) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final counts = state.statusCounts;
+
+    final items = [
+      ('Menunggu', counts[ReportPostStatus.waitingReview] ?? 0,
+          Colors.orange, Colors.orange.withValues(alpha: 0.15)),
+      ('Diproses', counts[ReportPostStatus.inProgress] ?? 0,
+          Colors.blue, Colors.blue.withValues(alpha: 0.15)),
+      ('Selesai', counts[ReportPostStatus.solved] ?? 0,
+          Colors.green, Colors.green.withValues(alpha: 0.15)),
+      ('Ditolak', counts[ReportPostStatus.rejected] ?? 0,
+          colorScheme.error, colorScheme.error.withValues(alpha: 0.15)),
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Status Laporan',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: colorScheme.onSurface,
+          ),
         ),
         const SizedBox(height: 12),
         Row(
           children: [
-            Expanded(
-              child: _buildStatCard(
-                context: context,
-                label: 'Aduan Stuck',
-                value: '12',
-                valueColor: const Color(0xFFF59E0B),
-                leftBorderColor: const Color(0xFFF59E0B),
-                subtitle: '> 3 hari tanpa update',
+            for (var i = 0; i < items.length; i++) ...[
+              if (i > 0) const SizedBox(width: 8),
+              Expanded(
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: items[i].$4,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    children: [
+                      Text(
+                        '${items[i].$2}',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: items[i].$3,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        items[i].$1,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: items[i].$3,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildStatCard(
-                context: context,
-                label: 'Laporan Aktif',
-                value: '142',
-                subtitle: 'Total aduan berjalan',
-              ),
-            ),
+            ],
           ],
         ),
       ],
@@ -237,7 +358,8 @@ class PejabatDashboardScreen extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: colorScheme.primaryContainer,
                     borderRadius: BorderRadius.circular(999),
@@ -342,7 +464,8 @@ class PejabatDashboardScreen extends StatelessWidget {
                         value: cat.$2,
                         minHeight: 8,
                         backgroundColor: colorScheme.surfaceContainer,
-                        valueColor: AlwaysStoppedAnimation(colorScheme.primary),
+                        valueColor:
+                            AlwaysStoppedAnimation(colorScheme.primary),
                       ),
                     ),
                   ],
@@ -388,21 +511,26 @@ class PejabatDashboardScreen extends StatelessWidget {
               padding: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
                 border: index < kecamatanData.length - 1
-                    ? Border(bottom: BorderSide(color: colorScheme.outlineVariant))
+                    ? Border(
+                        bottom:
+                            BorderSide(color: colorScheme.outlineVariant))
                     : null,
               ),
               child: Row(
                 children: [
                   CircleAvatar(
                     radius: 12,
-                    backgroundColor:
-                        isTop ? colorScheme.primary : colorScheme.surfaceContainerHighest,
+                    backgroundColor: isTop
+                        ? colorScheme.primary
+                        : colorScheme.surfaceContainerHighest,
                     child: Text(
                       '${index + 1}',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: isTop ? colorScheme.onPrimary : colorScheme.onSurface,
+                        color: isTop
+                            ? colorScheme.onPrimary
+                            : colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -421,7 +549,9 @@ class PejabatDashboardScreen extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
-                      color: isTop ? colorScheme.error : colorScheme.onSurfaceVariant,
+                      color: isTop
+                          ? colorScheme.error
+                          : colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -433,8 +563,13 @@ class PejabatDashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildTindakanSegera(BuildContext context) {
+  Widget _buildTindakanSegera(
+      BuildContext context, PejabatDashboardLoaded state) {
     final colorScheme = Theme.of(context).colorScheme;
+
+    if (state.topStuckReports.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -454,46 +589,20 @@ class PejabatDashboardScreen extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 16),
-        _buildUrgentCard(
-          context: context,
-          priority: 'High Priority',
-          priorityColor: colorScheme.error,
-          priorityBgColor: colorScheme.errorContainer,
-          borderColor: colorScheme.error,
-          title: 'Jalan Berlubang Dalam - Menur Pumpungan',
-          timeAgo: '4 hari lalu',
-          upvotes: 84,
-          status: 'Menunggu Verifikasi',
-        ),
-        const SizedBox(height: 16),
-        _buildUrgentCard(
-          context: context,
-          priority: 'Medium Priority',
-          priorityColor: colorScheme.secondary,
-          priorityBgColor: const Color(0xFFFFDAD7),
-          borderColor: colorScheme.secondary,
-          title: 'Saluran Buntu - Kalijudan',
-          timeAgo: '3 hari lalu',
-          upvotes: 62,
-          status: 'Menunggu Verifikasi',
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          width: double.infinity,
-          child: TextButton(
-            onPressed: () {
-              // TODO: implement
-            },
-            child: const Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('Lihat Semua Laporan Aktif'),
-                SizedBox(width: 4),
-                Icon(Icons.arrow_forward, size: 20),
-              ],
-            ),
-          ),
-        ),
+        ...state.topStuckReports.map((report) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _buildUrgentCard(
+                context: context,
+                priority: report.urgency,
+                priorityColor: colorScheme.error,
+                priorityBgColor: colorScheme.errorContainer,
+                borderColor: colorScheme.error,
+                title: report.title,
+                timeAgo: report.timeAgo,
+                upvotes: report.upvotes,
+                status: report.status.label,
+              ),
+            )),
       ],
     );
   }
@@ -525,7 +634,8 @@ class PejabatDashboardScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                 decoration: BoxDecoration(
                   color: priorityBgColor,
                   borderRadius: BorderRadius.circular(4),

@@ -28,6 +28,12 @@ class PejabatDashboardLoaded extends PejabatDashboardState {
       (statusCounts[ReportPostStatus.waitingReview] ?? 0) +
       (statusCounts[ReportPostStatus.inProgress] ?? 0);
 
+  double get completionRate {
+    final total = statusCounts.values.fold<int>(0, (sum, v) => sum + v);
+    if (total == 0) return 0;
+    return (statusCounts[ReportPostStatus.solved] ?? 0) / total;
+  }
+
   @override
   List<Object?> get props => [statusCounts, stuckCount, topStuckReports];
 }
