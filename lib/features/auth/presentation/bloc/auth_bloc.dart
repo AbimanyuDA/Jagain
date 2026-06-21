@@ -50,7 +50,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await SessionManager.addSession(user, email: event.email, password: event.password);
       emit(AuthAuthenticated(user: user));
     } catch (e) {
-      emit(AuthError(e.toString()));
+      emit(const AuthError('Email atau password salah.'));
     }
   }
 

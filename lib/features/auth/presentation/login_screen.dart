@@ -163,9 +163,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       prefixIcon: Icon(Icons.email_outlined),
                     ),
                     validator: (val) {
-                      if (val == null || val.isEmpty)
-                        return 'Email wajib diisi';
-                      if (!val.contains('@')) return 'Format email tidak valid';
+                      if (val == null || val.isEmpty) return 'Email wajib diisi';
                       return null;
                     },
                   ),
@@ -188,9 +186,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                     ),
                     validator: (val) {
-                      if (val == null || val.isEmpty)
-                        return 'Password wajib diisi';
-                      if (val.length < 6) return 'Password minimal 6 karakter';
+                      if (val == null || val.isEmpty) return 'Password wajib diisi';
                       return null;
                     },
                   ),
