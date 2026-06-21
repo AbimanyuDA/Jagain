@@ -102,6 +102,24 @@ class PejabatDashboardRepository {
     return (count: results[0] as int, topReports: results[1] as List<ReportPost>);
   }
 
+  /// Ranking kota di sebuah provinsi berdasarkan tingkat penyelesaian laporan.
+  /// Kota tanpa laporan sama sekali tidak dimasukkan ke ranking.
+  Future<List<({String kota, int totalReports, double resolvedRate})>>
+      getTopResolutionKota(String provinsi, {int limit = 4}) async {
+    final cities = IndonesiaRegions.getKota(provinsi);
+    final results = await Future.wait(cities.map((kota) async {
+      final counts = await getStatusCounts(kota);
+      final total = counts.values.fold<int>(0, (sum, v) => sum + v);
+      final resolved = counts[ReportPostStatus.solved] ?? 0;
+      final rate = total == 0 ? 0.0 : resolved / total;
+      return (kota: kota, totalReports: total, resolvedRate: rate);
+    }));
+
+    final withData = results.where((r) => r.totalReports > 0).toList()
+      ..sort((a, b) => b.resolvedRate.compareTo(a.resolvedRate));
+    return withData.take(limit).toList();
+  }
+
   /// Loads FR-1.2 + FR-1.3 data based on pejabat's wilayah.
   Future<({
     Map<ReportPostStatus, int> statusCounts,

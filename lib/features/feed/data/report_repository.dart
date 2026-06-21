@@ -371,6 +371,17 @@ class ReportRepository {
     return result.count ?? 0;
   }
 
+  /// Mengambil seluruh laporan yang dibuat sejak [since].
+  /// Hanya memfilter pada satu field (createdAt) agar tidak butuh
+  /// composite index Firestore baru; filter wilayah/bulan dilakukan
+  /// di client side oleh pemanggil.
+  Future<List<ReportPost>> getReportsSince(DateTime since) async {
+    final snapshot = await _reports
+        .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(since))
+        .get();
+    return snapshot.docs.map((doc) => _mapToReportPost(doc, null)).toList();
+  }
+
   Future<List<ReportPost>> getStuckByWilayah(
     String wilayah, {
     int days = 7,
