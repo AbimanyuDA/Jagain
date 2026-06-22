@@ -59,7 +59,7 @@ class PejabatDashboardRepository {
 
       final isOpen = report.status == ReportPostStatus.waitingReview ||
           report.status == ReportPostStatus.inProgress;
-      if (isOpen && report.createdAt.isBefore(cutoff)) {
+      if (isOpen && report.updatedAt.isBefore(cutoff)) {
         stuckReports.add(report);
       }
     }

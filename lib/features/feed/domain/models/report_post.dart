@@ -51,6 +51,7 @@ class ReportPost {
   final String userAvatarUrl;
   final String userBadge;
   final DateTime createdAt;
+  final DateTime updatedAt;
   final String title;
   final String description;
   final String imageUrl;
@@ -76,6 +77,7 @@ class ReportPost {
     required this.userAvatarUrl,
     required this.userBadge,
     required this.createdAt,
+    required this.updatedAt,
     required this.title,
     required this.description,
     required this.imageUrl,
@@ -108,6 +110,7 @@ class ReportPost {
       userAvatarUrl: userAvatarUrl,
       userBadge: userBadge,
       createdAt: createdAt,
+      updatedAt: updatedAt,
       title: title,
       description: description,
       imageUrl: imageUrl,

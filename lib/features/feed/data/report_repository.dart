@@ -369,6 +369,7 @@ class ReportRepository {
       userAvatarUrl: data['authorAvatarUrl'] ?? '',
       userBadge: data['authorBadge'] ?? 'Citizen Reporter',
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       title: data['title'] ?? '',
       description: data['description'] ?? '',
       imageUrl: imageUrls.isNotEmpty ? imageUrls.first : '',

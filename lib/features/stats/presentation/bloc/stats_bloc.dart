@@ -57,7 +57,7 @@ class StatsBloc extends Bloc<StatsEvent, StatsState> {
 
   String _buildWilayahString(String? provinsi, String? kota) {
     if (kota != null && provinsi != null) return '$kota -> $provinsi -> Pusat';
-    if (provinsi != null) return provinsi;
+    if (provinsi != null) return '$provinsi -> Pusat';
     return '';
   }
 
