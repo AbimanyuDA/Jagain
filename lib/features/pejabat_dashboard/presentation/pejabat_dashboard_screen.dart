@@ -10,11 +10,7 @@ import '../../feed/domain/models/report_post.dart';
 import '../../stats/presentation/bloc/stats_bloc.dart';
 import '../../stats/presentation/bloc/stats_event.dart';
 import '../../stats/presentation/bloc/stats_state.dart';
-import '../../stats/presentation/widgets/kategori_card.dart';
-import '../../stats/presentation/widgets/monthly_trend_card.dart';
-import '../../stats/presentation/widgets/responsivitas_card.dart';
-import '../../stats/presentation/widgets/stat_count_card.dart';
-import '../../stats/presentation/widgets/top_penanganan_kota_card.dart';
+import '../../stats/presentation/widgets/stats_card_grid.dart';
 import '../data/pejabat_dashboard_repository.dart';
 import 'bloc/pejabat_dashboard_bloc.dart';
 import 'bloc/pejabat_dashboard_event.dart';
@@ -44,7 +40,7 @@ class PejabatDashboardScreen extends StatelessWidget {
         ),
         BlocProvider(
           create: (_) => PejabatDashboardBloc()
-            ..add(LoadDashboardStats(
+            ..add(LoadStuckReports(
               pejabatWilayah: wilayah,
               currentUserId: user.uid,
             )),
@@ -99,25 +95,7 @@ class _DashboardView extends StatelessWidget {
                 _buildJurisdictionHeader(context),
                 const SizedBox(height: 24),
                 _buildStatusCounters(context, statsState),
-                const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () => context.push(AppRoutes.pejabatReportList),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    icon: const Icon(Icons.list_alt, size: 18),
-                    label: const Text('Lihat Semua Laporan'),
-                  ),
-                ),
                 const SizedBox(height: 24),
-                _buildStatsGrid(context, statsState),
-                const SizedBox(height: 32),
                 BlocBuilder<PejabatDashboardBloc, PejabatDashboardState>(
                   builder: (context, dashState) {
                     if (dashState is PejabatDashboardLoaded) {
@@ -142,6 +120,8 @@ class _DashboardView extends StatelessWidget {
                     return const SizedBox.shrink();
                   },
                 ),
+                const SizedBox(height: 24),
+                StatsCardGrid(state: statsState, showHeader: true),
                 const SizedBox(height: 100),
               ],
             ),
@@ -228,113 +208,6 @@ class _DashboardView extends StatelessWidget {
     );
   }
 
-  Widget _buildStatsGrid(BuildContext context, StatsLoaded state) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final percentage = (state.completionRate * 100).toStringAsFixed(1);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Statistik Laporan',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: colorScheme.onSurface,
-          ),
-        ),
-        const SizedBox(height: 12),
-        ResponsivitasCard(
-          responsifRate: state.responsifRate,
-          apatisRate: state.apatisRate,
-        ),
-        const SizedBox(height: 12),
-        IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                child: StatCountCard(
-                  label: 'Laporan Aktif',
-                  value: '${state.activeCount}',
-                  subtitle: 'Total aduan berjalan',
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: StatCountCard(
-                  label: 'Laporan Macet',
-                  value: '${state.stuckCount}',
-                  valueColor: state.stuckCount > 0
-                      ? const Color(0xFFF59E0B)
-                      : null,
-                  borderColor: state.stuckCount > 0
-                      ? const Color(0xFFF59E0B)
-                      : null,
-                  showWarning: state.stuckCount > 0,
-                  subtitle: '> 7 hari tanpa update',
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(
-                child: StatCountCard(
-                  label: 'Penyelesaian',
-                  value: '$percentage%',
-                  trailing: SizedBox(
-                    width: 48,
-                    height: 48,
-                    child: CircularProgressIndicator(
-                      value: state.completionRate,
-                      strokeWidth: 4,
-                      backgroundColor: colorScheme.outlineVariant,
-                      valueColor:
-                          AlwaysStoppedAnimation(colorScheme.primary),
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: StatCountCard(
-                  label: 'Rerata Respons',
-                  value: '— ',
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        if (state.topKota.isNotEmpty) ...[
-          TopPenangananKotaCard(topKota: state.topKota),
-          const SizedBox(height: 12),
-        ],
-        if (state.cityCounts != null && state.cityCounts!.isNotEmpty) ...[
-          KategoriCard(
-            title: 'Laporan per Kota',
-            counts: state.cityCounts!,
-          ),
-          const SizedBox(height: 12),
-        ],
-        if (state.categoryCounts.isNotEmpty) ...[
-          KategoriCard(
-            title: 'Kerusakan per Kategori',
-            counts: state.categoryCounts,
-          ),
-          const SizedBox(height: 12),
-        ],
-        if (state.monthlyTrend.isNotEmpty)
-          MonthlyTrendCard(monthlyTrend: state.monthlyTrend),
-      ],
-    );
-  }
-
   Widget _buildStatusCounters(BuildContext context, StatsLoaded state) {
     final colorScheme = Theme.of(context).colorScheme;
     final counts = state.statusCounts;
@@ -414,6 +287,22 @@ class _DashboardView extends StatelessWidget {
             ],
           ),
         ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () => context.push(AppRoutes.pejabatReportList),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: colorScheme.primary,
+              foregroundColor: colorScheme.onPrimary,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            icon: const Icon(Icons.list_alt, size: 18),
+            label: const Text('Lihat Semua Laporan'),
+          ),
+        ),
       ],
     );
   }
@@ -431,16 +320,16 @@ class _DashboardView extends StatelessWidget {
       children: [
         Row(
           children: [
-            Icon(Icons.warning, color: colorScheme.error),
-            const SizedBox(width: 8),
             Text(
-              'Perlu Tindakan! (Terlama)',
+              'Perlu Update Segera!',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
                 color: colorScheme.onSurface,
               ),
             ),
+            const SizedBox(width: 8),
+            Icon(Icons.warning, color: colorScheme.error),
           ],
         ),
         const SizedBox(height: 16),

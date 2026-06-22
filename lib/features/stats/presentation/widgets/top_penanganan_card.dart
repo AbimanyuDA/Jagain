@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 
-import '../bloc/stats_state.dart';
+import '../../data/stats_repository.dart';
 
-class TopPenangananKotaCard extends StatelessWidget {
-  final List<KotaResolutionStat> topKota;
+class TopPenangananCard extends StatelessWidget {
+  final String title;
+  final List<RegionResolutionStat> items;
 
-  const TopPenangananKotaCard({super.key, required this.topKota});
+  const TopPenangananCard({
+    super.key,
+    required this.title,
+    required this.items,
+  });
 
   static const _medals = [
     (Icons.workspace_premium, Color(0xFFFFB300)),
@@ -28,7 +33,7 @@ class TopPenangananKotaCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Top Penanganan Kota/Kabupaten',
+            title,
             style: TextStyle(
               fontSize: 14,
               fontWeight: FontWeight.w700,
@@ -36,7 +41,7 @@ class TopPenangananKotaCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
-          for (var i = 0; i < topKota.length; i++)
+          for (var i = 0; i < items.length; i++)
             Padding(
               padding: const EdgeInsets.only(bottom: 10),
               child: Row(
@@ -58,7 +63,7 @@ class TopPenangananKotaCard extends StatelessWidget {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      topKota[i].kota,
+                      items[i].name,
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -67,7 +72,7 @@ class TopPenangananKotaCard extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '${(topKota[i].resolvedRate * 100).toStringAsFixed(1)}% Selesai',
+                    '${(items[i].resolvedRate * 100).toStringAsFixed(1)}% Selesai',
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,

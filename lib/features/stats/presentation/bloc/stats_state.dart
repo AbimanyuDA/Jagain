@@ -1,14 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import '../../../feed/domain/models/report_post.dart';
-
-typedef KotaResolutionStat = ({
-  String kota,
-  int totalReports,
-  double resolvedRate,
-});
-
-typedef MonthlyReportCount = ({DateTime month, int count});
+import '../../data/stats_repository.dart';
 
 abstract class StatsState extends Equatable {
   const StatsState();
@@ -26,18 +19,18 @@ class StatsLoaded extends StatsState {
   final String? kota;
   final Map<ReportPostStatus, int> statusCounts;
   final int stuckCount;
-  final List<KotaResolutionStat> topKota;
+  final List<RegionResolutionStat> topResolution;
   final List<MonthlyReportCount> monthlyTrend;
   final Map<String, int> categoryCounts;
-  final Map<String, int>? cityCounts;
+  final Map<String, int>? regionCounts;
 
   const StatsLoaded({
     required this.statusCounts,
     required this.stuckCount,
-    required this.topKota,
-    required this.monthlyTrend,
+    this.topResolution = const [],
+    this.monthlyTrend = const [],
     this.categoryCounts = const {},
-    this.cityCounts,
+    this.regionCounts,
     this.provinsi,
     this.kota,
   });
@@ -71,10 +64,10 @@ class StatsLoaded extends StatsState {
     kota,
     statusCounts,
     stuckCount,
-    topKota,
+    topResolution,
     monthlyTrend,
     categoryCounts,
-    cityCounts,
+    regionCounts,
   ];
 }
 

@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../core/data/indonesia_regions.dart';
 import '../../../feed/data/report_repository.dart';
 import '../../../feed/domain/models/report_post.dart';
 import '../../data/pejabat_dashboard_repository.dart';
@@ -14,10 +13,7 @@ class PejabatReportListBloc
     extends Bloc<PejabatReportListEvent, PejabatReportListState> {
   PejabatReportListBloc({
     ReportRepository? reportRepository,
-    PejabatDashboardRepository? dashboardRepository,
   })  : _reportRepository = reportRepository ?? ReportRepository(),
-        _dashboardRepository =
-            dashboardRepository ?? PejabatDashboardRepository(),
         super(PejabatReportListInitial()) {
     on<LoadReports>(_onLoadReports);
     on<ChangeSortOption>(_onChangeSortOption);
@@ -25,7 +21,6 @@ class PejabatReportListBloc
   }
 
   final ReportRepository _reportRepository;
-  final PejabatDashboardRepository _dashboardRepository;
   StreamSubscription<List<ReportPost>>? _subscription;
   List<ReportPost> _allReports = [];
   ReportSortOption _currentSort = ReportSortOption.newest;
@@ -36,29 +31,14 @@ class PejabatReportListBloc
   ) async {
     emit(PejabatReportListLoading());
     try {
-      final parsed = PejabatDashboardRepository.parseWilayah(event.pejabatWilayah);
+      final parsed =
+          PejabatDashboardRepository.parseWilayah(event.pejabatWilayah);
 
-      Stream<List<ReportPost>> stream;
-      if (parsed.level == 'kota') {
-        stream = _reportRepository.watchReportsByWilayahFiltered(
-          parsed.kota!,
-          currentUserId: event.currentUserId,
-        );
-      } else if (parsed.level == 'provinsi') {
-        final cities = IndonesiaRegions.getKota(parsed.provinsi!).toSet();
-        stream = _reportRepository
-            .watchReportsByWilayahFiltered(
-              '',
-              currentUserId: event.currentUserId,
-            )
-            .map((reports) =>
-                reports.where((r) => cities.contains(r.wilayah)).toList());
-      } else {
-        stream = _reportRepository.watchReportsByWilayahFiltered(
-          '',
-          currentUserId: event.currentUserId,
-        );
-      }
+      final stream = _reportRepository.watchReports(
+        provinsi: parsed.level == 'provinsi' ? parsed.provinsi : null,
+        wilayah: parsed.level == 'kota' ? parsed.kota : null,
+        currentUserId: event.currentUserId,
+      );
 
       await _subscription?.cancel();
       _subscription = stream.listen(

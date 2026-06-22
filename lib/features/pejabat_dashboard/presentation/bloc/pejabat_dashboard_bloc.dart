@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../feed/data/report_repository.dart';
 import '../../data/pejabat_dashboard_repository.dart';
 import 'pejabat_dashboard_event.dart';
 import 'pejabat_dashboard_state.dart';
@@ -7,26 +8,29 @@ import 'pejabat_dashboard_state.dart';
 class PejabatDashboardBloc
     extends Bloc<PejabatDashboardEvent, PejabatDashboardState> {
   PejabatDashboardBloc({
-    PejabatDashboardRepository? repository,
-  })  : _repository = repository ?? PejabatDashboardRepository(),
+    ReportRepository? reportRepository,
+  })  : _reportRepository = reportRepository ?? ReportRepository(),
         super(PejabatDashboardInitial()) {
-    on<LoadDashboardStats>(_onLoadStats);
+    on<LoadStuckReports>(_onLoadStats);
   }
 
-  final PejabatDashboardRepository _repository;
+  final ReportRepository _reportRepository;
 
   Future<void> _onLoadStats(
-    LoadDashboardStats event,
+    LoadStuckReports event,
     Emitter<PejabatDashboardState> emit,
   ) async {
     emit(PejabatDashboardLoading());
     try {
-      final stats = await _repository.loadStats(
-        event.pejabatWilayah,
+      final parsed =
+          PejabatDashboardRepository.parseWilayah(event.pejabatWilayah);
+      final stuckReports = await _reportRepository.getStuck(
+        provinsi: parsed.level == 'provinsi' ? parsed.provinsi : null,
+        wilayah: parsed.level == 'kota' ? parsed.kota : null,
         currentUserId: event.currentUserId,
       );
       emit(PejabatDashboardLoaded(
-        topStuckReports: stats.topStuckReports,
+        topStuckReports: stuckReports,
       ));
     } catch (e) {
       emit(PejabatDashboardError(e.toString()));

@@ -7,11 +7,11 @@ abstract class PejabatDashboardEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-class LoadDashboardStats extends PejabatDashboardEvent {
+class LoadStuckReports extends PejabatDashboardEvent {
   final String pejabatWilayah;
   final String? currentUserId;
 
-  const LoadDashboardStats({
+  const LoadStuckReports({
     required this.pejabatWilayah,
     this.currentUserId,
   });

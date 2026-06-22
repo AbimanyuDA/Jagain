@@ -1,7 +1,7 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
-import '../bloc/stats_state.dart';
+import '../../data/stats_repository.dart';
 
 const _monthAbbreviations = [
   'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',

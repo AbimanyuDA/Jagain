@@ -32,23 +32,24 @@ class ReportRepository {
         );
   }
 
-  Stream<List<ReportPost>> watchReportsByWilayah(
-    String wilayah, {
-    String? currentUserId,
-  }) {
-    return _reports
-        .where('wilayah', isEqualTo: wilayah)
-        .snapshots()
-        .map(
-          (snapshot) {
-            final posts = snapshot.docs
-                .map((doc) => _mapToReportPost(doc, currentUserId))
-                .toList();
-            posts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-            return posts;
-          },
-        );
-  }
+  // COMMENTED replaced by new scoped query
+  // Stream<List<ReportPost>> watchReportsByWilayah(
+  //   String wilayah, {
+  //   String? currentUserId,
+  // }) {
+  //   return _reports
+  //       .where('wilayah', isEqualTo: wilayah)
+  //       .snapshots()
+  //       .map(
+  //         (snapshot) {
+  //           final posts = snapshot.docs
+  //               .map((doc) => _mapToReportPost(doc, currentUserId))
+  //               .toList();
+  //           posts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  //           return posts;
+  //         },
+  //       );
+  // }
 
   Stream<List<ReportPost>> watchReportsByStatus(
     ReportPostStatus status, {
@@ -68,34 +69,35 @@ class ReportRepository {
         );
   }
 
-  /// Laporan berdasarkan wilayah pejabat, dengan optional filter status
-  Stream<List<ReportPost>> watchReportsByWilayahFiltered(
-    String wilayah, {
-    ReportPostStatus? status,
-    String? currentUserId,
-  }) {
-    // Wildcard match: pejabat kota mendapat laporan kecamatannya juga
-    // Gunakan prefix matching di client side setelah fetch by wilayah field
-    Query<Map<String, dynamic>> query = _reports;
+  // COMMENTED: replaced by new scoped query
+  // /// Laporan berdasarkan wilayah pejabat, dengan optional filter status
+  // Stream<List<ReportPost>> watchReportsByWilayahFiltered(
+  //   String wilayah, {
+  //   ReportPostStatus? status,
+  //   String? currentUserId,
+  // }) {
+  //   // Wildcard match: pejabat kota mendapat laporan kecamatannya juga
+  //   // Gunakan prefix matching di client side setelah fetch by wilayah field
+  //   Query<Map<String, dynamic>> query = _reports;
 
-    if (status != null) {
-      query = query.where('status', isEqualTo: status.key);
-    }
+  //   if (status != null) {
+  //     query = query.where('status', isEqualTo: status.key);
+  //   }
 
-    return query.snapshots().map((snapshot) {
-      final posts = snapshot.docs
-          .map((doc) => _mapToReportPost(doc, currentUserId))
-          .where((post) {
-            // Cocokkan semua laporan yang wilayahnya mengandung wilayah pejabat
-            // Contoh: pejabat "Kota Surabaya -> Jawa Timur -> Pusat"
-            // akan melihat laporan dari Kecamatan X -> Kota Surabaya -> ...
-            return post.wilayah.contains(wilayah) || post.wilayah == wilayah;
-          })
-          .toList();
-      posts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      return posts;
-    });
-  }
+  //   return query.snapshots().map((snapshot) {
+  //     final posts = snapshot.docs
+  //         .map((doc) => _mapToReportPost(doc, currentUserId))
+  //         .where((post) {
+  //           // Cocokkan semua laporan yang wilayahnya mengandung wilayah pejabat
+  //           // Contoh: pejabat "Kota Surabaya -> Jawa Timur -> Pusat"
+  //           // akan melihat laporan dari Kecamatan X -> Kota Surabaya -> ...
+  //           return post.wilayah.contains(wilayah) || post.wilayah == wilayah;
+  //         })
+  //         .toList();
+  //     posts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+  //     return posts;
+  //   });
+  // }
 
   /// Update status laporan oleh pejabat
   Future<void> updateReportStatus({
@@ -391,38 +393,76 @@ class ReportRepository {
     );
   }
 
-  Future<List<ReportPost>> getReportsByWilayah(
-    String wilayah, {
+  Query<Map<String, dynamic>> _scopedQuery({
+    String? provinsi,
+    String? wilayah,
+  }) {
+    Query<Map<String, dynamic>> query = _reports;
+    if (wilayah != null) {
+      query = query.where('wilayah', isEqualTo: wilayah);
+    } else if (provinsi != null) {
+      query = query.where('provinsi', isEqualTo: provinsi);
+    }
+    return query;
+  }
+
+  Future<List<ReportPost>> getReports({
+    String? provinsi,
+    String? wilayah,
     String? currentUserId,
   }) async {
-    final snapshot = await _reports
-        .where('wilayah', isEqualTo: wilayah)
-        .get();
+    final snapshot = await _scopedQuery(
+      provinsi: provinsi,
+      wilayah: wilayah,
+    ).get();
     return snapshot.docs
         .map((doc) => _mapToReportPost(doc, currentUserId))
         .toList();
   }
 
-  Future<List<ReportPost>> getAllReports({String? currentUserId}) async {
-    final snapshot = await _reports.get();
-    return snapshot.docs
-        .map((doc) => _mapToReportPost(doc, currentUserId))
-        .toList();
+  Stream<List<ReportPost>> watchReports({
+    String? provinsi,
+    String? wilayah,
+    ReportPostStatus? status,
+    String? currentUserId,
+  }) {
+    Query<Map<String, dynamic>> query = _scopedQuery(
+      provinsi: provinsi,
+      wilayah: wilayah,
+    );
+    if (status != null) {
+      query = query.where('status', isEqualTo: status.key);
+    }
+    return query.snapshots().map((snapshot) {
+      final posts = snapshot.docs
+          .map((doc) => _mapToReportPost(doc, currentUserId))
+          .toList();
+      posts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return posts;
+    });
   }
 
-  Future<int> countByStatus(ReportPostStatus status) async {
-    final result = await _reports
+  Future<int> countByStatus(
+    ReportPostStatus status, {
+    String? provinsi,
+    String? wilayah,
+  }) async {
+    final result = await _scopedQuery(provinsi: provinsi, wilayah: wilayah)
         .where('status', isEqualTo: status.key)
         .count()
         .get();
     return result.count ?? 0;
   }
 
-  Future<int> countStuck({int days = 7}) async {
+  Future<int> countStuck({
+    String? provinsi,
+    String? wilayah,
+    int days = 7,
+  }) async {
     final cutoff = Timestamp.fromDate(
       DateTime.now().subtract(Duration(days: days)),
     );
-    final result = await _reports
+    final result = await _scopedQuery(provinsi: provinsi, wilayah: wilayah)
         .where('status', whereIn: ['waiting_review', 'in_progress'])
         .where('updatedAt', isLessThan: cutoff)
         .count()
@@ -431,6 +471,8 @@ class ReportRepository {
   }
 
   Future<List<ReportPost>> getStuck({
+    String? provinsi,
+    String? wilayah,
     int days = 7,
     int limit = 5,
     String? currentUserId,
@@ -438,64 +480,7 @@ class ReportRepository {
     final cutoff = Timestamp.fromDate(
       DateTime.now().subtract(Duration(days: days)),
     );
-    final snapshot = await _reports
-        .where('status', whereIn: ['waiting_review', 'in_progress'])
-        .where('updatedAt', isLessThan: cutoff)
-        .orderBy('updatedAt')
-        .limit(limit)
-        .get();
-    return snapshot.docs
-        .map((doc) => _mapToReportPost(doc, currentUserId))
-        .toList();
-  }
-
-  Future<int> countByStatusAndWilayah(
-    ReportPostStatus status,
-    String wilayah,
-  ) async {
-    final result = await _reports
-        .where('wilayah', isEqualTo: wilayah)
-        .where('status', isEqualTo: status.key)
-        .count()
-        .get();
-    return result.count ?? 0;
-  }
-
-  Future<int> countStuckByWilayah(String wilayah, {int days = 7}) async {
-    final cutoff = Timestamp.fromDate(
-      DateTime.now().subtract(Duration(days: days)),
-    );
-    final result = await _reports
-        .where('wilayah', isEqualTo: wilayah)
-        .where('status', whereIn: ['waiting_review', 'in_progress'])
-        .where('updatedAt', isLessThan: cutoff)
-        .count()
-        .get();
-    return result.count ?? 0;
-  }
-
-  /// Mengambil seluruh laporan yang dibuat sejak [since].
-  /// Hanya memfilter pada satu field (createdAt) agar tidak butuh
-  /// composite index Firestore baru; filter wilayah/bulan dilakukan
-  /// di client side oleh pemanggil.
-  Future<List<ReportPost>> getReportsSince(DateTime since) async {
-    final snapshot = await _reports
-        .where('createdAt', isGreaterThanOrEqualTo: Timestamp.fromDate(since))
-        .get();
-    return snapshot.docs.map((doc) => _mapToReportPost(doc, null)).toList();
-  }
-
-  Future<List<ReportPost>> getStuckByWilayah(
-    String wilayah, {
-    int days = 7,
-    int limit = 5,
-    String? currentUserId,
-  }) async {
-    final cutoff = Timestamp.fromDate(
-      DateTime.now().subtract(Duration(days: days)),
-    );
-    final snapshot = await _reports
-        .where('wilayah', isEqualTo: wilayah)
+    final snapshot = await _scopedQuery(provinsi: provinsi, wilayah: wilayah)
         .where('status', whereIn: ['waiting_review', 'in_progress'])
         .where('updatedAt', isLessThan: cutoff)
         .orderBy('updatedAt')
