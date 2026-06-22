@@ -139,6 +139,86 @@ class ReportRepository {
         );
   }
 
+  Future<void> addUpdate({
+    required String reportId,
+    required String title,
+    required String description,
+    List<File>? images,
+    ReportPostStatus? newStatus,
+  }) async {
+    List<String>? imageUrls;
+    if (images != null && images.isNotEmpty) {
+      imageUrls = await _storage.uploadImages(
+        files: images,
+        folder: MinioFolder.statusProofs,
+        ownerId: reportId,
+      );
+    }
+
+    await _reports.doc(reportId).collection('updates').add({
+      'title': title,
+      'description': description,
+      'isDone': true,
+      'imageUrls': imageUrls,
+      'createdAt': Timestamp.now(),
+    });
+
+    await _reports.doc(reportId).update({
+      'statusUpdateCount': FieldValue.increment(1),
+      'updatedAt': Timestamp.now(),
+    });
+
+    if (newStatus != null) {
+      await updateReportStatus(reportId: reportId, newStatus: newStatus);
+    }
+  }
+
+  Future<void> editUpdate({
+    required String reportId,
+    required String updateId,
+    required String title,
+    required String description,
+    List<File>? newImages,
+    List<String>? existingImageUrls,
+  }) async {
+    final data = <String, dynamic>{
+      'title': title,
+      'description': description,
+    };
+
+    if (newImages != null && newImages.isNotEmpty) {
+      final uploaded = await _storage.uploadImages(
+        files: newImages,
+        folder: MinioFolder.statusProofs,
+        ownerId: reportId,
+      );
+      data['imageUrls'] = [...?existingImageUrls, ...uploaded];
+    } else if (existingImageUrls != null) {
+      data['imageUrls'] = existingImageUrls;
+    }
+
+    await _reports
+        .doc(reportId)
+        .collection('updates')
+        .doc(updateId)
+        .update(data);
+  }
+
+  Future<void> deleteUpdate({
+    required String reportId,
+    required String updateId,
+  }) async {
+    await _reports
+        .doc(reportId)
+        .collection('updates')
+        .doc(updateId)
+        .delete();
+
+    await _reports.doc(reportId).update({
+      'statusUpdateCount': FieldValue.increment(-1),
+    });
+  }
+
   /// Returns the set of validation type this user has already cast.
   Future<String?> getUserValidation(String reportId, String userId) async {
     final doc = await _reports

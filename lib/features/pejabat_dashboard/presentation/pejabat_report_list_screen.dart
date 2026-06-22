@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:go_router/go_router.dart';
-
 import '../../auth/presentation/bloc/auth_bloc.dart';
 import '../../auth/presentation/bloc/auth_state.dart';
 import '../../feed/domain/models/report_post.dart';
 import 'bloc/pejabat_report_list_bloc.dart';
 import 'bloc/pejabat_report_list_event.dart';
 import 'bloc/pejabat_report_list_state.dart';
+import 'pejabat_report_detail_screen.dart';
 
 enum ReportSortOption {
   newest('Terbaru'),
@@ -226,7 +225,11 @@ class _ReportCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        context.push('/report-detail', extra: report);
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => PejabatReportDetailScreen(post: report),
+          ),
+        );
       },
       child: Container(
         padding: const EdgeInsets.all(16),

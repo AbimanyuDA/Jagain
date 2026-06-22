@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../app/routes.dart';
 import '../../auth/presentation/bloc/auth_bloc.dart';
+import 'pejabat_report_detail_screen.dart';
 import '../../auth/presentation/bloc/auth_state.dart';
 import '../../feed/domain/models/report_post.dart';
 import 'bloc/pejabat_dashboard_bloc.dart';
@@ -660,7 +661,13 @@ class _DashboardView extends StatelessWidget {
     };
 
     return GestureDetector(
-      onTap: () => context.push('/report-detail', extra: report),
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => PejabatReportDetailScreen(post: report),
+          ),
+        );
+      },
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
