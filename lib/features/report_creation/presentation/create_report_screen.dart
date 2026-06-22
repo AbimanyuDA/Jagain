@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/data/indonesia_regions.dart';
 import '../../auth/domain/user_model.dart';
 import '../../auth/presentation/bloc/auth_bloc.dart';
 import '../../auth/presentation/bloc/auth_state.dart';
@@ -240,7 +241,10 @@ class _CreateReportViewState extends State<_CreateReportView> {
 
     setState(() {
       _addressController.text = result['address'] ?? '';
-      _wilayahController.text = result['wilayah'] ?? '';
+      final rawWilayah = result['wilayah'] ?? '';
+      _wilayahController.text = rawWilayah.isNotEmpty
+          ? IndonesiaRegions.normalizeGmapsWilayah(rawWilayah)
+          : '';
       _isLocating = false;
     });
   }
@@ -351,8 +355,8 @@ class _CreateReportViewState extends State<_CreateReportView> {
                         ElevatedButton(
                           onPressed: author == null ? null : () => _submit(author),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1B3564),
-                            foregroundColor: Colors.white,
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            foregroundColor: Theme.of(context).colorScheme.onPrimary,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -481,7 +485,7 @@ class _CreateReportViewState extends State<_CreateReportView> {
             ),
             backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
               if (states.contains(WidgetState.selected)) {
-                return const Color(0xFF1B3564);
+                return Theme.of(context).colorScheme.primary;
               }
               return null;
             }),
@@ -653,10 +657,10 @@ class _CreateReportViewState extends State<_CreateReportView> {
                       Center(
                         child: Transform.translate(
                           offset: const Offset(0, -24),
-                          child: const Icon(
+                          child: Icon(
                             Icons.location_pin,
                             size: 48,
-                            color: Color(0xFF1B3564),
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
                       ),
