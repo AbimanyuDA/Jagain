@@ -25,7 +25,7 @@ class PejabatDashboardRepository {
 
   final ReportRepository _reportRepository;
 
-  ({String level, String? provinsi, String? kota}) parseWilayah(
+  static ({String level, String? provinsi, String? kota}) parseWilayah(
       String wilayah) {
     final parts = wilayah.split(' -> ');
     switch (parts.length) {

@@ -2,7 +2,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/data/indonesia_regions.dart';
 import '../../../feed/data/report_repository.dart';
-import '../../../feed/domain/models/report_post.dart';
 import '../../../pejabat_dashboard/data/pejabat_dashboard_repository.dart';
 import 'stats_event.dart';
 import 'stats_state.dart';
@@ -48,6 +47,8 @@ class StatsBloc extends Bloc<StatsEvent, StatsState> {
           stuckCount: stats.stuckCount,
           topKota: topKota,
           monthlyTrend: monthlyTrend,
+          categoryCounts: stats.categoryCounts,
+          cityCounts: stats.cityCounts,
         ),
       );
     } catch (e) {

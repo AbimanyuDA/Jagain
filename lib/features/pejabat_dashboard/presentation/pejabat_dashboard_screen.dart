@@ -1,4 +1,3 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
@@ -8,32 +7,49 @@ import '../../auth/presentation/bloc/auth_bloc.dart';
 import 'pejabat_report_detail_screen.dart';
 import '../../auth/presentation/bloc/auth_state.dart';
 import '../../feed/domain/models/report_post.dart';
+import '../../stats/presentation/bloc/stats_bloc.dart';
+import '../../stats/presentation/bloc/stats_event.dart';
+import '../../stats/presentation/bloc/stats_state.dart';
+import '../../stats/presentation/widgets/kategori_card.dart';
+import '../../stats/presentation/widgets/monthly_trend_card.dart';
+import '../../stats/presentation/widgets/responsivitas_card.dart';
+import '../../stats/presentation/widgets/stat_count_card.dart';
+import '../../stats/presentation/widgets/top_penanganan_kota_card.dart';
+import '../data/pejabat_dashboard_repository.dart';
 import 'bloc/pejabat_dashboard_bloc.dart';
 import 'bloc/pejabat_dashboard_event.dart';
 import 'bloc/pejabat_dashboard_state.dart';
-
-const _monthAbbreviations = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun',
-  'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des',
-];
 
 class PejabatDashboardScreen extends StatelessWidget {
   const PejabatDashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (_) {
-        final bloc = PejabatDashboardBloc();
-        final authState = context.read<AuthBloc>().state;
-        if (authState is AuthAuthenticated) {
-          bloc.add(LoadDashboardStats(
-            pejabatWilayah: authState.user.wilayah ?? 'Pusat',
-            currentUserId: authState.user.uid,
-          ));
-        }
-        return bloc;
-      },
+    final authState = context.read<AuthBloc>().state;
+    if (authState is! AuthAuthenticated) {
+      return const Scaffold(
+        body: Center(child: Text('Not authenticated')),
+      );
+    }
+
+    final user = authState.user;
+    final wilayah = user.wilayah ?? 'Pusat';
+    final parsed = PejabatDashboardRepository.parseWilayah(wilayah);
+
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (_) => StatsBloc()
+            ..add(LoadStats(provinsi: parsed.provinsi, kota: parsed.kota)),
+        ),
+        BlocProvider(
+          create: (_) => PejabatDashboardBloc()
+            ..add(LoadDashboardStats(
+              pejabatWilayah: wilayah,
+              currentUserId: user.uid,
+            )),
+        ),
+      ],
       child: const _DashboardView(),
     );
   }
@@ -44,20 +60,36 @@ class _DashboardView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dashboard Pejabat - Jagain'),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: colorScheme.onSurface),
+          onPressed: () => context.pop(),
+        ),
+        title: Text(
+          'Dashboard Pejabat',
+          style: TextStyle(
+            color: colorScheme.onSurface,
+            fontWeight: FontWeight.w900,
+            fontSize: 22,
+            letterSpacing: 0.5,
+          ),
+        ),
+        backgroundColor: colorScheme.surface,
+        elevation: 0,
+        scrolledUnderElevation: 0,
       ),
-      body: BlocBuilder<PejabatDashboardBloc, PejabatDashboardState>(
-        builder: (context, state) {
-          if (state is PejabatDashboardLoading ||
-              state is PejabatDashboardInitial) {
+      body: BlocBuilder<StatsBloc, StatsState>(
+        builder: (context, statsState) {
+          if (statsState is StatsError) {
+            return Center(child: Text('Error: ${statsState.message}'));
+          }
+          if (statsState is! StatsLoaded) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (state is PejabatDashboardError) {
-            return Center(child: Text('Error: ${state.message}'));
-          }
-          final loaded = state as PejabatDashboardLoaded;
+
           return SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Column(
@@ -66,7 +98,7 @@ class _DashboardView extends StatelessWidget {
                 const SizedBox(height: 16),
                 _buildJurisdictionHeader(context),
                 const SizedBox(height: 24),
-                _buildStatusCounters(context, loaded),
+                _buildStatusCounters(context, statsState),
                 const SizedBox(height: 12),
                 SizedBox(
                   width: double.infinity,
@@ -84,11 +116,32 @@ class _DashboardView extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 24),
-                _buildStatsGrid(context, loaded),
+                _buildStatsGrid(context, statsState),
                 const SizedBox(height: 32),
-                // _buildHeatMapCard(context),
-                // const SizedBox(height: 32),
-                _buildTindakanSegera(context, loaded),
+                BlocBuilder<PejabatDashboardBloc, PejabatDashboardState>(
+                  builder: (context, dashState) {
+                    if (dashState is PejabatDashboardLoaded) {
+                      return _buildTindakanSegera(context, dashState);
+                    }
+                    if (dashState is PejabatDashboardError) {
+                      return Text(
+                        'Gagal memuat laporan macet: ${dashState.message}',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      );
+                    }
+                    if (dashState is PejabatDashboardLoading) {
+                      return const Center(
+                        child: Padding(
+                          padding: EdgeInsets.all(16),
+                          child: CircularProgressIndicator(),
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  },
+                ),
                 const SizedBox(height: 100),
               ],
             ),
@@ -175,80 +228,7 @@ class _DashboardView extends StatelessWidget {
     );
   }
 
-  Widget _buildStatCard({
-    required BuildContext context,
-    required String label,
-    required String value,
-    String? subtitle,
-    Color? valueColor,
-    Color? borderColor,
-    bool showWarning = false,
-    Widget? trailing,
-  }) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: borderColor ?? colorScheme.outlineVariant,
-          width: borderColor != null ? 1.5 : 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Text(
-                      label,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    if (showWarning) ...[
-                      const SizedBox(width: 4),
-                      Icon(Icons.warning_amber_rounded, size: 14, color: borderColor),
-                    ],
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w600,
-                    color: valueColor ?? colorScheme.onSurface,
-                  ),
-                ),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          if (trailing != null) trailing,
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatsGrid(BuildContext context, PejabatDashboardLoaded state) {
+  Widget _buildStatsGrid(BuildContext context, StatsLoaded state) {
     final colorScheme = Theme.of(context).colorScheme;
     final percentage = (state.completionRate * 100).toStringAsFixed(1);
 
@@ -264,15 +244,17 @@ class _DashboardView extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        _buildResponsivitasCard(context, state),
+        ResponsivitasCard(
+          responsifRate: state.responsifRate,
+          apatisRate: state.apatisRate,
+        ),
         const SizedBox(height: 12),
         IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
-                child: _buildStatCard(
-                  context: context,
+                child: StatCountCard(
                   label: 'Laporan Aktif',
                   value: '${state.activeCount}',
                   subtitle: 'Total aduan berjalan',
@@ -280,12 +262,15 @@ class _DashboardView extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: _buildStatCard(
-                  context: context,
+                child: StatCountCard(
                   label: 'Laporan Macet',
                   value: '${state.stuckCount}',
-                  valueColor: state.stuckCount > 0 ? const Color(0xFFF59E0B) : null,
-                  borderColor: state.stuckCount > 0 ? const Color(0xFFF59E0B) : null,
+                  valueColor: state.stuckCount > 0
+                      ? const Color(0xFFF59E0B)
+                      : null,
+                  borderColor: state.stuckCount > 0
+                      ? const Color(0xFFF59E0B)
+                      : null,
                   showWarning: state.stuckCount > 0,
                   subtitle: '> 7 hari tanpa update',
                 ),
@@ -299,53 +284,58 @@ class _DashboardView extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Expanded(
-                child: _buildStatCard(
-                  context: context,
+                child: StatCountCard(
                   label: 'Penyelesaian',
                   value: '$percentage%',
-                trailing: SizedBox(
-                  width: 48,
-                  height: 48,
-                  child: CircularProgressIndicator(
-                    value: state.completionRate,
-                    strokeWidth: 4,
-                    backgroundColor: colorScheme.outlineVariant,
-                    valueColor: AlwaysStoppedAnimation(colorScheme.primary),
+                  trailing: SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: CircularProgressIndicator(
+                      value: state.completionRate,
+                      strokeWidth: 4,
+                      backgroundColor: colorScheme.outlineVariant,
+                      valueColor:
+                          AlwaysStoppedAnimation(colorScheme.primary),
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _buildStatCard(
-                context: context,
-                label: 'Rerata Respons',
-                value: '— ',
+              const SizedBox(width: 12),
+              Expanded(
+                child: StatCountCard(
+                  label: 'Rerata Respons',
+                  value: '— ',
+                ),
               ),
-            ),
-          ],
+            ],
           ),
         ),
         const SizedBox(height: 12),
         if (state.topKota.isNotEmpty) ...[
-          const SizedBox(height: 12),
-          _buildTopResolutionKota(context, state),
-        ],
-        if (state.cityCounts != null) ...[
-          const SizedBox(height: 12),
-          _buildCityCounts(context, state),
-        ],
-        _buildKategoriKerusakan(context, state),
-        if (state.monthlyTrend.isNotEmpty) ...[
-          _buildMonthlyTrendCard(context, state),
+          TopPenangananKotaCard(topKota: state.topKota),
           const SizedBox(height: 12),
         ],
+        if (state.cityCounts != null && state.cityCounts!.isNotEmpty) ...[
+          KategoriCard(
+            title: 'Laporan per Kota',
+            counts: state.cityCounts!,
+          ),
+          const SizedBox(height: 12),
+        ],
+        if (state.categoryCounts.isNotEmpty) ...[
+          KategoriCard(
+            title: 'Kerusakan per Kategori',
+            counts: state.categoryCounts,
+          ),
+          const SizedBox(height: 12),
+        ],
+        if (state.monthlyTrend.isNotEmpty)
+          MonthlyTrendCard(monthlyTrend: state.monthlyTrend),
       ],
     );
   }
 
-  Widget _buildStatusCounters(
-      BuildContext context, PejabatDashboardLoaded state) {
+  Widget _buildStatusCounters(BuildContext context, StatsLoaded state) {
     final colorScheme = Theme.of(context).colorScheme;
     final counts = state.statusCounts;
 
@@ -425,513 +415,6 @@ class _DashboardView extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildHeatMapCard(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Heatmap Laporan',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-            color: colorScheme.onSurface,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: colorScheme.outlineVariant),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: Column(
-            children: [
-              Container(
-                height: 200,
-                color: colorScheme.surfaceContainerHigh,
-              ),
-              Padding(
-                padding: const EdgeInsets.all(16),
-                child: SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () {
-                      // TODO: implement
-                    },
-                    icon: const Icon(Icons.map, size: 20),
-                    label: const Text('Buka Heatmap'),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildKategoriKerusakan(
-      BuildContext context, PejabatDashboardLoaded state) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final counts = state.categoryCounts;
-
-    if (counts.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    final total = counts.values.fold<int>(0, (sum, v) => sum + v);
-    final sorted = counts.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Kerusakan per Kategori',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 12),
-          ...sorted.map((entry) {
-            final pct = total > 0 ? entry.value / total : 0.0;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        entry.key,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                      Text(
-                        '${(pct * 100).toInt()}%  |  ${entry.value}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(999),
-                    child: LinearProgressIndicator(
-                      value: pct,
-                      minHeight: 8,
-                      backgroundColor: colorScheme.surfaceContainer,
-                      valueColor:
-                          AlwaysStoppedAnimation(colorScheme.primary),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCityCounts(
-      BuildContext context, PejabatDashboardLoaded state) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final counts = state.cityCounts!;
-
-    if (counts.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    final total = counts.values.fold<int>(0, (sum, v) => sum + v);
-    final sorted = counts.entries.toList()
-      ..sort((a, b) => b.value.compareTo(a.value));
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Laporan per Kota',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 12),
-          ...sorted.map((entry) {
-            final pct = total > 0 ? entry.value / total : 0.0;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        entry.key,
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: colorScheme.onSurface,
-                        ),
-                      ),
-                      Text(
-                        '${(pct * 100).toInt()}%  |  ${entry.value}',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 6),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(999),
-                    child: LinearProgressIndicator(
-                      value: pct,
-                      minHeight: 8,
-                      backgroundColor: colorScheme.surfaceContainer,
-                      valueColor:
-                          AlwaysStoppedAnimation(colorScheme.primary),
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildResponsivitasCard(
-      BuildContext context, PejabatDashboardLoaded state) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final responsifPct = (state.responsifRate * 100).toStringAsFixed(0);
-    final apatisPct = (state.apatisRate * 100).toStringAsFixed(0);
-    final isHighPriority = state.apatisRate > 0.10;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Column(
-        children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Text(
-              'Skor Responsivitas',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 180,
-            width: 180,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                PieChart(
-                  PieChartData(
-                    startDegreeOffset: -90,
-                    centerSpaceRadius: 60,
-                    sectionsSpace: 0,
-                    sections: [
-                      PieChartSectionData(
-                        value: state.responsifRate,
-                        color: colorScheme.primary,
-                        showTitle: false,
-                        radius: 22,
-                      ),
-                      PieChartSectionData(
-                        value: state.apatisRate == 0
-                            ? 0.0001
-                            : state.apatisRate,
-                        color: colorScheme.outlineVariant,
-                        showTitle: false,
-                        radius: 22,
-                      ),
-                    ],
-                  ),
-                ),
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      '$responsifPct%',
-                      style: TextStyle(
-                        fontSize: 28,
-                        fontWeight: FontWeight.w900,
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                    Text(
-                      'RESPONSIF',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.5,
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 16),
-          const Divider(),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '$apatisPct%',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w800,
-                      color: colorScheme.onSurface,
-                    ),
-                  ),
-                  Text(
-                    'Apatis',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  color: isHighPriority
-                      ? colorScheme.error.withAlpha(30)
-                      : const Color(0xFF00A550).withAlpha(30),
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  isHighPriority ? 'High Priority' : 'Stabil',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w700,
-                    color: isHighPriority
-                        ? colorScheme.error
-                        : const Color(0xFF00A550),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMonthlyTrendCard(
-      BuildContext context, PejabatDashboardLoaded state) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final maxCount = state.monthlyTrend
-        .map((m) => m.count)
-        .fold<int>(0, (max, v) => v > max ? v : max);
-    final maxY = maxCount == 0 ? 5.0 : (maxCount * 1.2);
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Tren Laporan Bulanan',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 16),
-          SizedBox(
-            height: 160,
-            child: BarChart(
-              BarChartData(
-                maxY: maxY,
-                gridData: const FlGridData(show: false),
-                borderData: FlBorderData(show: false),
-                titlesData: FlTitlesData(
-                  leftTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false),
-                  ),
-                  bottomTitles: AxisTitles(
-                    sideTitles: SideTitles(
-                      showTitles: true,
-                      getTitlesWidget: (value, meta) {
-                        final index = value.toInt();
-                        if (index < 0 || index >= state.monthlyTrend.length) {
-                          return const SizedBox.shrink();
-                        }
-                        final month = state.monthlyTrend[index].month;
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: Text(
-                            _monthAbbreviations[month.month - 1],
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                barGroups: [
-                  for (var i = 0; i < state.monthlyTrend.length; i++)
-                    BarChartGroupData(
-                      x: i,
-                      barRods: [
-                        BarChartRodData(
-                          toY: state.monthlyTrend[i].count.toDouble(),
-                          color: colorScheme.primary,
-                          width: 18,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      ],
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  static const _medals = [
-    (Icons.workspace_premium, Color(0xFFFFB300)),
-    (Icons.workspace_premium, Color(0xFFB0BEC5)),
-    (Icons.workspace_premium, Color(0xFFA1887F)),
-  ];
-
-  Widget _buildTopResolutionKota(
-      BuildContext context, PejabatDashboardLoaded state) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Top Penanganan Kota/Kabupaten',
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: colorScheme.onSurfaceVariant,
-            ),
-          ),
-          const SizedBox(height: 12),
-          for (var i = 0; i < state.topKota.length; i++)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: Row(
-                children: [
-                  if (i < _medals.length)
-                    Icon(_medals[i].$1, color: _medals[i].$2, size: 22)
-                  else
-                    SizedBox(
-                      width: 22,
-                      child: Text(
-                        '${i + 1}',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          color: colorScheme.onSurfaceVariant,
-                        ),
-                      ),
-                    ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      state.topKota[i].kota,
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.onSurface,
-                      ),
-                    ),
-                  ),
-                  Text(
-                    '${(state.topKota[i].resolvedRate * 100).toStringAsFixed(1)}% Selesai',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.primary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-        ],
-      ),
     );
   }
 

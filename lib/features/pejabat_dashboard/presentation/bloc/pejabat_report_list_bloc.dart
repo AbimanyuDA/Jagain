@@ -36,7 +36,7 @@ class PejabatReportListBloc
   ) async {
     emit(PejabatReportListLoading());
     try {
-      final parsed = _dashboardRepository.parseWilayah(event.pejabatWilayah);
+      final parsed = PejabatDashboardRepository.parseWilayah(event.pejabatWilayah);
 
       Stream<List<ReportPost>> stream;
       if (parsed.level == 'kota') {
