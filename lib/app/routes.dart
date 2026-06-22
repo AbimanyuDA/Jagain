@@ -20,6 +20,7 @@ import '../features/auth/presentation/bloc/auth_bloc.dart';
 import '../features/auth/presentation/bloc/auth_state.dart';
 import '../features/auth/domain/user_model.dart';
 import '../features/pejabat_dashboard/presentation/pejabat_dashboard_screen.dart';
+import '../features/pejabat_dashboard/presentation/pejabat_report_list_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
 import '../features/settings/presentation/request_official_screen.dart';
 
@@ -59,6 +60,7 @@ class AppRoutes {
   static const String editProfile = '/edit-profile';
   static const String settings = '/settings';
   static const String requestOfficial = '/request-official';
+  static const String pejabatReportList = '/pejabat/reports';
 
   static GoRouter createRouter(BuildContext context) {
     final authBloc = context.read<AuthBloc>();
@@ -99,8 +101,8 @@ class AppRoutes {
           // Hanya admin yang boleh akses /admin
           if (loc == adminDashboard && user.role != UserRole.admin) return feed;
 
-          // Hanya official yang boleh akses /pejabat
-          if (loc == pejabatDashboard && user.role != UserRole.official) return feed;
+          // Hanya official yang boleh akses /pejabat*
+          if (loc.startsWith(pejabatDashboard) && user.role != UserRole.official) return feed;
         }
 
         // Lainnya → tidak ada redirect
@@ -188,6 +190,13 @@ class AppRoutes {
         GoRoute(
           path: requestOfficial,
           builder: (BuildContext context, GoRouterState state) => const RequestOfficialScreen(),
+        ),
+        GoRoute(
+          path: pejabatReportList,
+          builder: (BuildContext context, GoRouterState state) {
+            final status = state.extra as ReportPostStatus?;
+            return PejabatReportListScreen(initialStatus: status);
+          },
         ),
       ],
     );

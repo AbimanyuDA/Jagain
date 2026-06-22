@@ -21,6 +21,7 @@ class SubmitReportRequested extends CreateReportEvent {
   final double latitude;
   final double longitude;
   final String wilayah;
+  final String provinsi;
 
   const SubmitReportRequested({
     required this.author,
@@ -32,6 +33,7 @@ class SubmitReportRequested extends CreateReportEvent {
     required this.latitude,
     required this.longitude,
     required this.wilayah,
+    required this.provinsi,
   });
 
   @override
@@ -45,5 +47,6 @@ class SubmitReportRequested extends CreateReportEvent {
     latitude,
     longitude,
     wilayah,
+    provinsi,
   ];
 }

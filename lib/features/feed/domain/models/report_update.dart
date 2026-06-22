@@ -6,6 +6,7 @@ class ReportUpdate {
   final String description;
   final DateTime createdAt;
   final bool isDone; // true = step completed, false = pending/future step
+  final List<String>? imageUrls;
 
   const ReportUpdate({
     required this.id,
@@ -13,6 +14,7 @@ class ReportUpdate {
     required this.description,
     required this.createdAt,
     this.isDone = true,
+    this.imageUrls,
   });
 
   String get timeFormatted {
@@ -41,6 +43,9 @@ class ReportUpdate {
       description: data['description'] as String? ?? '',
       createdAt: (data['createdAt'] as dynamic)?.toDate() ?? DateTime.now(),
       isDone: data['isDone'] as bool? ?? true,
+      imageUrls: data['imageUrls'] != null
+          ? List<String>.from(data['imageUrls'])
+          : null,
     );
   }
 }

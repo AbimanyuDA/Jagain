@@ -12,6 +12,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../../../core/data/indonesia_regions.dart';
 import '../../auth/domain/user_model.dart';
 import '../../auth/presentation/bloc/auth_bloc.dart';
 import '../../auth/presentation/bloc/auth_state.dart';
@@ -50,13 +51,13 @@ class _CreateReportViewState extends State<_CreateReportView> {
   final _descriptionController = TextEditingController();
   final _addressController = TextEditingController();
   final _wilayahController = TextEditingController();
+  final _provinsiController = TextEditingController();
   final _picker = ImagePicker();
 
   final List<File> _images = [];
   List<String> _categories = _fallbackCategories;
   String _category = _fallbackCategories.first;
   String _urgency = _urgencyLevels.first;
-
 
   LatLng? _selectedLocation;
   Timer? _debounceTimer;
@@ -87,7 +88,7 @@ class _CreateReportViewState extends State<_CreateReportView> {
         }
       });
     } catch (_) {
-      // Gunakan fallback hardcoded jika Firestore gagal
+      // TODO: fallback if firesstore failed
     }
   }
 
@@ -98,6 +99,7 @@ class _CreateReportViewState extends State<_CreateReportView> {
     _descriptionController.dispose();
     _addressController.dispose();
     _wilayahController.dispose();
+    _provinsiController.dispose();
     super.dispose();
   }
 
@@ -215,9 +217,14 @@ class _CreateReportViewState extends State<_CreateReportView> {
               (c) => (c['types'] as List).contains('administrative_area_level_2'),
               orElse: () => null,
             );
+            final provinsiComponent = components.firstWhere(
+              (c) => (c['types'] as List).contains('administrative_area_level_1'),
+              orElse: () => null,
+            );
           return {
             'address': data['results'][0]['formatted_address'] as String?,
             'wilayah': wilayahComponent?['long_name'] as String?,
+            'provinsi': provinsiComponent?['long_name'] as String?,
           };
         }
       }
@@ -226,7 +233,7 @@ class _CreateReportViewState extends State<_CreateReportView> {
     } finally {
       client.close();
     }
-    return {'address': null, 'wilayah': null};
+    return {'address': null, 'wilayah': null, 'provinsi': null};
   }
 
   Future<void> _confirmLocation() async {
@@ -240,7 +247,11 @@ class _CreateReportViewState extends State<_CreateReportView> {
 
     setState(() {
       _addressController.text = result['address'] ?? '';
-      _wilayahController.text = result['wilayah'] ?? '';
+      final rawWilayah = result['wilayah'] ?? '';
+      _wilayahController.text = rawWilayah.isNotEmpty
+          ? IndonesiaRegions.normalizeGmapsWilayah(rawWilayah)
+          : '';
+      _provinsiController.text = result['provinsi'] ?? '';
       _isLocating = false;
     });
   }
@@ -275,6 +286,15 @@ class _CreateReportViewState extends State<_CreateReportView> {
       return;
     }
 
+    if (_wilayahController.text.isEmpty || _provinsiController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Wilayah belum terdeteksi. Geser peta dan coba lagi.'),
+        ),
+      );
+      return;
+    }
+
     // final snapshotFile = await _takeMapSnapshot();
     // if (snapshotFile != null) {
     //   setState(() {
@@ -294,6 +314,7 @@ class _CreateReportViewState extends State<_CreateReportView> {
         latitude: _selectedLocation!.latitude,
         longitude: _selectedLocation!.longitude,
         wilayah: _wilayahController.text.trim(),
+        provinsi: _provinsiController.text.trim(),
       ),
     );
   }
@@ -351,8 +372,8 @@ class _CreateReportViewState extends State<_CreateReportView> {
                         ElevatedButton(
                           onPressed: author == null ? null : () => _submit(author),
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF1B3564),
-                            foregroundColor: Colors.white,
+                            backgroundColor: Theme.of(context).colorScheme.primary,
+                            foregroundColor: Theme.of(context).colorScheme.onPrimary,
                             padding: const EdgeInsets.symmetric(vertical: 14),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(8),
@@ -481,7 +502,7 @@ class _CreateReportViewState extends State<_CreateReportView> {
             ),
             backgroundColor: WidgetStateProperty.resolveWith<Color?>((states) {
               if (states.contains(WidgetState.selected)) {
-                return const Color(0xFF1B3564);
+                return Theme.of(context).colorScheme.primary;
               }
               return null;
             }),
@@ -638,6 +659,7 @@ class _CreateReportViewState extends State<_CreateReportView> {
                             _selectedLocation = position.target;
                             _addressController.text = '';
                             _wilayahController.text = '';
+                            _provinsiController.text = '';
                           });
                           _debounceTimer?.cancel();
                           _debounceTimer = Timer(const Duration(milliseconds: 800), () {
@@ -653,10 +675,10 @@ class _CreateReportViewState extends State<_CreateReportView> {
                       Center(
                         child: Transform.translate(
                           offset: const Offset(0, -24),
-                          child: const Icon(
+                          child: Icon(
                             Icons.location_pin,
                             size: 48,
-                            color: Color(0xFF1B3564),
+                            color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
                       ),
@@ -676,6 +698,7 @@ class _CreateReportViewState extends State<_CreateReportView> {
         const SizedBox(height: 12),
         TextFormField(
           controller: _addressController,
+          readOnly: true,
           decoration: const InputDecoration(
             labelText: 'Alamat',
             border: OutlineInputBorder(),
@@ -684,12 +707,20 @@ class _CreateReportViewState extends State<_CreateReportView> {
         const SizedBox(height: 12),
         TextFormField(
           controller: _wilayahController,
+          readOnly: true,
           decoration: const InputDecoration(
             labelText: 'Wilayah',
             border: OutlineInputBorder(),
           ),
-          validator: (val) =>
-              (val == null || val.trim().isEmpty) ? 'Wilayah wajib diisi' : null,
+        ),
+        const SizedBox(height: 12),
+        TextFormField(
+          controller: _provinsiController,
+          readOnly: true,
+          decoration: const InputDecoration(
+            labelText: 'Provinsi',
+            border: OutlineInputBorder(),
+          ),
         ),
       ],
     );

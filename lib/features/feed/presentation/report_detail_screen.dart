@@ -18,10 +18,18 @@ import '../domain/models/report_update.dart';
 
 const double _kValidationRadius = 100.0; // meters
 
+typedef UpdateActionBuilder = Widget Function(
+    BuildContext context, ReportUpdate update);
+
 class ReportDetailScreen extends StatefulWidget {
   final ReportPost post;
+  final UpdateActionBuilder? updateActionBuilder;
 
-  const ReportDetailScreen({super.key, required this.post});
+  const ReportDetailScreen({
+    super.key,
+    required this.post,
+    this.updateActionBuilder,
+  });
 
   @override
   State<ReportDetailScreen> createState() => _ReportDetailScreenState();
@@ -354,7 +362,11 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
                   child: TabBarView(
                     controller: _tabController,
                     children: [
-                      _UpdatesTab(postId: post.id, repo: _repo),
+                      _UpdatesTab(
+                        postId: post.id,
+                        repo: _repo,
+                        actionBuilder: widget.updateActionBuilder,
+                      ),
                       _RepliesTab(post: post, repo: _commentRepo),
                     ],
                   ),
@@ -761,8 +773,13 @@ class _ValidationButton extends StatelessWidget {
 class _UpdatesTab extends StatelessWidget {
   final String postId;
   final ReportRepository repo;
+  final UpdateActionBuilder? actionBuilder;
 
-  const _UpdatesTab({required this.postId, required this.repo});
+  const _UpdatesTab({
+    required this.postId,
+    required this.repo,
+    this.actionBuilder,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -857,14 +874,44 @@ class _UpdatesTab extends StatelessWidget {
                               height: 1.4,
                             ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            update.timeFormatted,
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: colorScheme.onSurfaceVariant,
-                              fontWeight: FontWeight.w500,
+                          if (update.imageUrls != null &&
+                              update.imageUrls!.isNotEmpty) ...[
+                            const SizedBox(height: 8),
+                            SizedBox(
+                              height: 80,
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: update.imageUrls!.length,
+                                separatorBuilder: (_, _) =>
+                                    const SizedBox(width: 8),
+                                itemBuilder: (_, i) => ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: AppNetworkImage(
+                                    url: update.imageUrls![i],
+                                    width: 80,
+                                    height: 80,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
                             ),
+                          ],
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Text(
+                                update.timeFormatted,
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: colorScheme.onSurfaceVariant,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              if (actionBuilder != null) ...[
+                                const Spacer(),
+                                actionBuilder!(context, update),
+                              ],
+                            ],
                           ),
                         ],
                       ),

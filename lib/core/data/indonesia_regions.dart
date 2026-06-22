@@ -300,4 +300,24 @@ class IndonesiaRegions {
   static List<String> getKota(String provinsiName) {
     return kotaByProvinsi[provinsiName] ?? [];
   }
+
+  static final Set<String> _allKota = kotaByProvinsi.values
+      .expand((cities) => cities)
+      .toSet();
+
+  static String normalizeGmapsWilayah(String gmapsName) {
+    final trimmed = gmapsName.trim();
+
+    if (_allKota.contains(trimmed)) return trimmed;
+
+    if (trimmed.startsWith('Kabupaten ')) {
+      final candidate = 'Kab. ${trimmed.substring('Kabupaten '.length)}';
+      if (_allKota.contains(candidate)) return candidate;
+    }
+
+    final kotaCandidate = 'Kota $trimmed';
+    if (_allKota.contains(kotaCandidate)) return kotaCandidate;
+
+    return trimmed;
+  }
 }

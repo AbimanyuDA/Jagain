@@ -1,14 +1,7 @@
 import 'package:equatable/equatable.dart';
 
 import '../../../feed/domain/models/report_post.dart';
-
-typedef KotaResolutionStat = ({
-  String kota,
-  int totalReports,
-  double resolvedRate,
-});
-
-typedef MonthlyReportCount = ({DateTime month, int count});
+import '../../data/stats_repository.dart';
 
 abstract class StatsState extends Equatable {
   const StatsState();
@@ -22,21 +15,22 @@ class StatsInitial extends StatsState {}
 class StatsLoading extends StatsState {}
 
 class StatsLoaded extends StatsState {
-  /// Threshold apatisRate di atas ini dianggap "High Priority".
-  static const double kHighPriorityThreshold = 0.10;
-
   final String? provinsi;
   final String? kota;
   final Map<ReportPostStatus, int> statusCounts;
   final int stuckCount;
-  final List<KotaResolutionStat> topKota;
+  final List<RegionResolutionStat> topResolution;
   final List<MonthlyReportCount> monthlyTrend;
+  final Map<String, int> categoryCounts;
+  final Map<String, int>? regionCounts;
 
   const StatsLoaded({
     required this.statusCounts,
     required this.stuckCount,
-    required this.topKota,
-    required this.monthlyTrend,
+    this.topResolution = const [],
+    this.monthlyTrend = const [],
+    this.categoryCounts = const {},
+    this.regionCounts,
     this.provinsi,
     this.kota,
   });
@@ -51,11 +45,18 @@ class StatsLoaded extends StatsState {
 
   int get resolved => statusCounts[ReportPostStatus.solved] ?? 0;
 
+  int get activeCount =>
+      (statusCounts[ReportPostStatus.waitingReview] ?? 0) +
+      (statusCounts[ReportPostStatus.inProgress] ?? 0);
+
+  double get completionRate {
+    if (total == 0) return 0;
+    return resolved / total;
+  }
+
   double get apatisRate => total == 0 ? 0 : stuckCount / total;
 
   double get responsifRate => 1 - apatisRate;
-
-  bool get isHighPriority => apatisRate > kHighPriorityThreshold;
 
   @override
   List<Object?> get props => [
@@ -63,8 +64,10 @@ class StatsLoaded extends StatsState {
     kota,
     statusCounts,
     stuckCount,
-    topKota,
+    topResolution,
     monthlyTrend,
+    categoryCounts,
+    regionCounts,
   ];
 }
 
