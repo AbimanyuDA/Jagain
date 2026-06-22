@@ -298,6 +298,7 @@ class ReportRepository {
     required double latitude,
     required double longitude,
     required String wilayah,
+    required String provinsi,
   }) async {
     final docRef = _reports.doc();
 
@@ -322,6 +323,7 @@ class ReportRepository {
       'imageUrls': imageUrls,
       'location': GeoPoint(latitude, longitude),
       'wilayah': wilayah,
+      'provinsi': provinsi,
       'status': ReportPostStatus.waitingReview.key,
       'upvoterIds': <String>[],
       'downvoterIds': <String>[],
@@ -378,6 +380,7 @@ class ReportRepository {
       urgency: data['urgency'] ?? 'NORMAL',
       status: ReportPostStatusX.fromKey(data['status'] as String?),
       wilayah: data['wilayah'] ?? '',
+      provinsi: data['provinsi'] ?? '',
       upvotes: upvoters.length - downvoters.length,
       updatesCount: (data['statusUpdateCount'] as int?) ?? 0,
       repliesCount: (data['commentCount'] as int?) ?? 0,

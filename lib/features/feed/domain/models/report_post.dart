@@ -60,6 +60,7 @@ class ReportPost {
   final String urgency;
   final ReportPostStatus status;
   final String wilayah;
+  final String provinsi;
   final int upvotes;
   final int updatesCount;
   final int repliesCount;
@@ -86,6 +87,7 @@ class ReportPost {
     required this.urgency,
     this.status = ReportPostStatus.waitingReview,
     this.wilayah = '',
+    this.provinsi = '',
     required this.upvotes,
     required this.updatesCount,
     required this.repliesCount,
@@ -119,6 +121,7 @@ class ReportPost {
       urgency: urgency,
       status: status,
       wilayah: wilayah,
+      provinsi: provinsi,
       upvotes: upvotes ?? this.upvotes,
       updatesCount: updatesCount,
       repliesCount: repliesCount ?? this.repliesCount,

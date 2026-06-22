@@ -29,6 +29,7 @@ class CreateReportBloc extends Bloc<CreateReportEvent, CreateReportState> {
         latitude: event.latitude,
         longitude: event.longitude,
         wilayah: event.wilayah,
+        provinsi: event.provinsi,
       );
       emit(CreateReportSuccess(reportId));
     } catch (e) {
