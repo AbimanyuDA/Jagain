@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../app/routes.dart';
 import '../../auth/presentation/bloc/auth_bloc.dart';
 import '../../auth/presentation/bloc/auth_state.dart';
 import '../../feed/domain/models/report_post.dart';
@@ -55,14 +57,30 @@ class _DashboardView extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const SizedBox(height: 16),
-                _buildProfileSection(context),
+                _buildJurisdictionHeader(context),
                 const SizedBox(height: 24),
                 _buildStatusCounters(context, loaded),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => context.push(AppRoutes.pejabatReportList),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                    icon: const Icon(Icons.list_alt, size: 18),
+                    label: const Text('Lihat Semua Laporan'),
+                  ),
+                ),
                 const SizedBox(height: 24),
                 _buildStatsGrid(context, loaded),
                 const SizedBox(height: 32),
-                _buildHeatMapCard(context),
-                const SizedBox(height: 32),
+                // _buildHeatMapCard(context),
+                // const SizedBox(height: 32),
                 _buildTindakanSegera(context, loaded),
                 const SizedBox(height: 100),
               ],
@@ -73,62 +91,80 @@ class _DashboardView extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileSection(BuildContext context) {
+  Widget _buildJurisdictionHeader(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     final authState = context.read<AuthBloc>().state;
     final user = (authState as AuthAuthenticated).user;
+    final wilayah = user.wilayah ?? 'Pusat';
 
-    return Row(
-      children: [
-        CircleAvatar(
-          radius: 30,
-          backgroundColor: Colors.grey.shade200,
-          backgroundImage: user.avatarUrl.isNotEmpty
-              ? NetworkImage(user.avatarUrl)
-              : null,
-          child: user.avatarUrl.isEmpty
-              ? Text(
-                  user.name.isNotEmpty
-                      ? user.name[0].toUpperCase()
-                      : '?',
-                  style: const TextStyle(fontSize: 24),
-                )
-              : null,
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Flexible(
-                    child: Text(
-                      user.name,
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w600,
-                        color: colorScheme.onSurface,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(Icons.verified, size: 18, color: colorScheme.primary),
-                ],
-              ),
-              Text(
-                '@${user.username}',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
+    final parts = wilayah.split(' -> ');
+    final String jurisdictionTitle;
+    final String jurisdictionSubtitle;
+
+    if (parts.length >= 3) {
+      jurisdictionTitle = 'Pemerintah ${parts[0]}';
+      jurisdictionSubtitle = parts[1];
+    } else if (parts.length == 2) {
+      jurisdictionTitle = 'Pemerintah Provinsi ${parts[0]}';
+      jurisdictionSubtitle = 'Tingkat Provinsi';
+    } else {
+      jurisdictionTitle = 'Pemerintah Pusat';
+      jurisdictionSubtitle = 'Seluruh Indonesia';
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.primary,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: colorScheme.onPrimary.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              Icons.account_balance,
+              size: 28,
+              color: colorScheme.onPrimary,
+            ),
           ),
-        ),
-      ],
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  jurisdictionTitle,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: colorScheme.onPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  jurisdictionSubtitle,
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: colorScheme.onPrimary.withValues(alpha: 0.8),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Icon(
+            Icons.verified,
+            size: 22,
+            color: colorScheme.onPrimary.withValues(alpha: 0.8),
+          ),
+        ],
+      ),
     );
   }
 
@@ -147,7 +183,7 @@ class _DashboardView extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
           color: borderColor ?? colorScheme.outlineVariant,
@@ -319,43 +355,57 @@ class _DashboardView extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            for (var i = 0; i < items.length; i++) ...[
-              if (i > 0) const SizedBox(width: 8),
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: items[i].$4,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Column(
-                    children: [
-                      Text(
-                        '${items[i].$2}',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: items[i].$3,
-                        ),
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: colorScheme.outlineVariant),
+          ),
+          child: Row(
+            children: [
+              for (var i = 0; i < items.length; i++) ...[
+                if (i > 0) const SizedBox(width: 6),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => context.push(
+                      AppRoutes.pejabatReportList,
+                      extra: ReportPostStatus.values[i],
+                    ),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: items[i].$4,
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      const SizedBox(height: 4),
-                      Text(
-                        items[i].$1,
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          color: items[i].$3,
-                        ),
-                        textAlign: TextAlign.center,
+                      child: Column(
+                        children: [
+                          Text(
+                            '${items[i].$2}',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              color: items[i].$3,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            items[i].$1,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: items[i].$3,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
+              ],
             ],
-          ],
+          ),
         ),
       ],
     );
@@ -378,7 +428,7 @@ class _DashboardView extends StatelessWidget {
         const SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
-            color: colorScheme.surfaceContainerLow,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(color: colorScheme.outlineVariant),
           ),
@@ -425,7 +475,7 @@ class _DashboardView extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: colorScheme.outlineVariant),
       ),
@@ -504,7 +554,7 @@ class _DashboardView extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
+        color: Colors.white,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: colorScheme.outlineVariant),
       ),
@@ -595,108 +645,136 @@ class _DashboardView extends StatelessWidget {
         const SizedBox(height: 16),
         ...state.topStuckReports.map((report) => Padding(
               padding: const EdgeInsets.only(bottom: 12),
-              child: _buildUrgentCard(
-                context: context,
-                priority: report.urgency,
-                priorityColor: colorScheme.onError,
-                priorityBgColor: colorScheme.error,
-                title: report.title,
-                timeAgo: report.timeAgo,
-                upvotes: report.upvotes,
-                status: report.status.label,
-              ),
+              child: _buildReportCard(context, report),
             )),
       ],
     );
   }
 
-  Widget _buildUrgentCard({
-    required BuildContext context,
-    required String priority,
-    required Color priorityColor,
-    required Color priorityBgColor,
-    required String title,
-    required String timeAgo,
-    required int upvotes,
-    required String status,
-  }) {
+  Widget _buildReportCard(BuildContext context, ReportPost report) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colorScheme.outlineVariant),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: priorityBgColor,
-                  borderRadius: BorderRadius.circular(4),
+    final (Color urgencyBg, Color urgencyFg) = switch (report.urgency) {
+      'URGENT' => (colorScheme.error, colorScheme.onError),
+      _ => (colorScheme.primary, colorScheme.onPrimary),
+    };
+
+    return GestureDetector(
+      onTap: () => context.push('/report-detail', extra: report),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: colorScheme.outlineVariant),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: urgencyBg,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        report.urgency,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: urgencyFg,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: colorScheme.surfaceContainerHigh,
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        report.category,
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                child: Text(
-                  priority,
+                Text(
+                  report.timeAgo,
                   style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: priorityColor,
+                    color: colorScheme.onSurfaceVariant,
                   ),
                 ),
-              ),
-              Text(
-                timeAgo,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: colorScheme.onSurface,
+              ],
             ),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Icon(Icons.thumb_up, size: 16, color: colorScheme.primary),
-              const SizedBox(width: 4),
-              Text(
-                '$upvotes',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.primary,
-                ),
+            const SizedBox(height: 8),
+            Text(
+              report.title,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: colorScheme.onSurface,
               ),
-              const SizedBox(width: 16),
-              Icon(Icons.sync, size: 16, color: colorScheme.onSurfaceVariant),
-              const SizedBox(width: 4),
-              Text(
-                status,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: colorScheme.onSurfaceVariant,
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(
+                  report.upvotes < 0 ? Icons.thumb_down : Icons.thumb_up,
+                  size: 16,
+                  color: report.upvotes < 0 ? colorScheme.error : colorScheme.primary,
                 ),
-              ),
-            ],
-          ),
-        ],
+                const SizedBox(width: 4),
+                Text(
+                  '${report.upvotes.abs()}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: report.upvotes < 0 ? colorScheme.error : colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Icon(Icons.chat_bubble_outline,
+                    size: 16, color: colorScheme.onSurfaceVariant),
+                const SizedBox(width: 4),
+                Text(
+                  '${report.repliesCount}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Icon(Icons.sync,
+                    size: 16, color: colorScheme.onSurfaceVariant),
+                const SizedBox(width: 4),
+                Text(
+                  report.status.label,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
