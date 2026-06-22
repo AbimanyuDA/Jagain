@@ -2,6 +2,22 @@ import '../../../core/data/indonesia_regions.dart';
 import '../../feed/domain/models/report_post.dart';
 import '../../feed/data/report_repository.dart';
 
+class DashboardStats {
+  final Map<ReportPostStatus, int> statusCounts;
+  final int stuckCount;
+  final List<ReportPost> topStuckReports;
+  final Map<String, int> categoryCounts;
+  final Map<String, int>? cityCounts;
+
+  const DashboardStats({
+    required this.statusCounts,
+    required this.stuckCount,
+    required this.topStuckReports,
+    required this.categoryCounts,
+    this.cityCounts,
+  });
+}
+
 class PejabatDashboardRepository {
   PejabatDashboardRepository({
     ReportRepository? reportRepository,
@@ -9,8 +25,6 @@ class PejabatDashboardRepository {
 
   final ReportRepository _reportRepository;
 
-  // Parses pejabat wilayah string "Kota Surabaya -> Jawa Timur -> Pusat"
-  // into level and region components.
   ({String level, String? provinsi, String? kota}) parseWilayah(
       String wilayah) {
     final parts = wilayah.split(' -> ');
@@ -24,7 +38,45 @@ class PejabatDashboardRepository {
     }
   }
 
-  // FR-1.2: city-level
+  DashboardStats _computeStats(
+    List<ReportPost> reports, {
+    bool groupByCity = false,
+  }) {
+    final statusCounts = {for (final s in ReportPostStatus.values) s: 0};
+    final categoryCounts = <String, int>{};
+    final cityCountsMap = <String, int>{};
+    final cutoff = DateTime.now().subtract(const Duration(days: 7));
+    final stuckReports = <ReportPost>[];
+
+    for (final report in reports) {
+      statusCounts[report.status] = statusCounts[report.status]! + 1;
+      categoryCounts[report.category] =
+          (categoryCounts[report.category] ?? 0) + 1;
+      if (groupByCity) {
+        cityCountsMap[report.wilayah] =
+            (cityCountsMap[report.wilayah] ?? 0) + 1;
+      }
+
+      final isOpen = report.status == ReportPostStatus.waitingReview ||
+          report.status == ReportPostStatus.inProgress;
+      if (isOpen && report.createdAt.isBefore(cutoff)) {
+        stuckReports.add(report);
+      }
+    }
+
+    stuckReports.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+
+    return DashboardStats(
+      statusCounts: statusCounts,
+      stuckCount: stuckReports.length,
+      topStuckReports: stuckReports.take(5).toList(),
+      categoryCounts: categoryCounts,
+      cityCounts: groupByCity ? cityCountsMap : null,
+    );
+  }
+
+  // --- Legacy methods kept for stats_bloc compatibility ---
+
   Future<Map<ReportPostStatus, int>> getStatusCounts(String wilayah) async {
     final results = await Future.wait(
       ReportPostStatus.values.map(
@@ -37,73 +89,6 @@ class PejabatDashboardRepository {
     };
   }
 
-  // FR-1.2: province-level
-  Future<Map<ReportPostStatus, int>> getStatusCountsByProvinsi(
-      String provinsi) async {
-    final cities = IndonesiaRegions.getKota(provinsi);
-    final cityResults = await Future.wait(
-      cities.map((city) => getStatusCounts(city)),
-    );
-    final totals = {for (final s in ReportPostStatus.values) s: 0};
-    for (final cityCount in cityResults) {
-      for (final s in ReportPostStatus.values) {
-        totals[s] = totals[s]! + (cityCount[s] ?? 0);
-      }
-    }
-    return totals;
-  }
-
-  // FR-1.3: city-level
-  Future<({int count, List<ReportPost> topReports})> getStuckReports(
-    String wilayah, {String? currentUserId}
-  ) async {
-    final results = await Future.wait([
-      _reportRepository.countStuckByWilayah(wilayah),
-      _reportRepository.getStuckByWilayah(wilayah, currentUserId: currentUserId),
-    ]);
-    return (count: results[0] as int, topReports: results[1] as List<ReportPost>);
-  }
-
-  // FR-1.3: province-level
-  Future<({int count, List<ReportPost> topReports})> getStuckReportsByProvinsi(
-    String provinsi, {String? currentUserId}
-  ) async {
-    final cities = IndonesiaRegions.getKota(provinsi);
-    final cityResults = await Future.wait(
-      cities.map((c) => getStuckReports(c, currentUserId: currentUserId)),
-    );
-    final totalCount = cityResults.fold<int>(0, (sum, r) => sum + r.count);
-    final allReports = cityResults.expand((r) => r.topReports).toList()
-      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
-    return (count: totalCount, topReports: allReports.take(5).toList());
-  }
-
-  // FR-1.2: pusat-level (no wilayah filter)
-  Future<Map<ReportPostStatus, int>> getStatusCountsAll() async {
-    final results = await Future.wait(
-      ReportPostStatus.values.map(
-        (s) => _reportRepository.countByStatus(s),
-      ),
-    );
-    return {
-      for (var i = 0; i < ReportPostStatus.values.length; i++)
-        ReportPostStatus.values[i]: results[i],
-    };
-  }
-
-  // FR-1.3: pusat-level (no wilayah filter)
-  Future<({int count, List<ReportPost> topReports})> getStuckReportsAll({
-    String? currentUserId,
-  }) async {
-    final results = await Future.wait([
-      _reportRepository.countStuck(),
-      _reportRepository.getStuck(currentUserId: currentUserId),
-    ]);
-    return (count: results[0] as int, topReports: results[1] as List<ReportPost>);
-  }
-
-  /// Ranking kota di sebuah provinsi berdasarkan tingkat penyelesaian laporan.
-  /// Kota tanpa laporan sama sekali tidak dimasukkan ke ranking.
   Future<List<({String kota, int totalReports, double resolvedRate})>>
       getTopResolutionKota(String provinsi, {int limit = 4}) async {
     final cities = IndonesiaRegions.getKota(provinsi);
@@ -120,40 +105,33 @@ class PejabatDashboardRepository {
     return withData.take(limit).toList();
   }
 
-  /// Loads FR-1.2 + FR-1.3 data based on pejabat's wilayah.
-  Future<({
-    Map<ReportPostStatus, int> statusCounts,
-    int stuckCount,
-    List<ReportPost> topStuckReports,
-  })> loadStats(String pejabatWilayah, {String? currentUserId}) async {
+  // --- End legacy methods ---
+
+  Future<DashboardStats> loadStats(
+    String pejabatWilayah, {
+    String? currentUserId,
+  }) async {
     final parsed = parseWilayah(pejabatWilayah);
 
-    final Map<ReportPostStatus, int> statusCounts;
-    final ({int count, List<ReportPost> topReports}) stuck;
-
+    final List<ReportPost> reports;
     if (parsed.level == 'kota') {
-      final results = await Future.wait([
-        getStatusCounts(parsed.kota!),
-        getStuckReports(parsed.kota!, currentUserId: currentUserId),
-      ]);
-      statusCounts = results[0] as Map<ReportPostStatus, int>;
-      stuck = results[1] as ({int count, List<ReportPost> topReports});
+      reports = await _reportRepository.getReportsByWilayah(
+        parsed.kota!,
+        currentUserId: currentUserId,
+      );
     } else if (parsed.level == 'provinsi') {
-      final results = await Future.wait([
-        getStatusCountsByProvinsi(parsed.provinsi!),
-        getStuckReportsByProvinsi(parsed.provinsi!, currentUserId: currentUserId),
-      ]);
-      statusCounts = results[0] as Map<ReportPostStatus, int>;
-      stuck = results[1] as ({int count, List<ReportPost> topReports});
+      final cities = IndonesiaRegions.getKota(parsed.provinsi!).toSet();
+      final all = await _reportRepository.getAllReports(
+        currentUserId: currentUserId,
+      );
+      reports = all.where((r) => cities.contains(r.wilayah)).toList();
+      return _computeStats(reports, groupByCity: true);
     } else {
-      statusCounts = await getStatusCountsAll();
-      stuck = await getStuckReportsAll(currentUserId: currentUserId);
+      reports = await _reportRepository.getAllReports(
+        currentUserId: currentUserId,
+      );
     }
 
-    return (
-      statusCounts: statusCounts,
-      stuckCount: stuck.count,
-      topStuckReports: stuck.topReports,
-    );
+    return _computeStats(reports);
   }
 }

@@ -57,15 +57,11 @@ class _DashboardView extends StatelessWidget {
                 const SizedBox(height: 16),
                 _buildProfileSection(context),
                 const SizedBox(height: 24),
-                _buildStatsGrid(context, loaded),
-                const SizedBox(height: 24),
                 _buildStatusCounters(context, loaded),
-                const SizedBox(height: 32),
-                _buildCrisisMapCard(context),
-                const SizedBox(height: 32),
-                _buildKategoriKerusakan(context),
                 const SizedBox(height: 24),
-                _buildTopKecamatan(context),
+                _buildStatsGrid(context, loaded),
+                const SizedBox(height: 32),
+                _buildHeatMapCard(context),
                 const SizedBox(height: 32),
                 _buildTindakanSegera(context, loaded),
                 const SizedBox(height: 100),
@@ -79,13 +75,25 @@ class _DashboardView extends StatelessWidget {
 
   Widget _buildProfileSection(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
+    final authState = context.read<AuthBloc>().state;
+    final user = (authState as AuthAuthenticated).user;
 
     return Row(
       children: [
         CircleAvatar(
-          radius: 24,
-          backgroundColor: colorScheme.primaryContainer,
-          child: Icon(Icons.account_balance, color: colorScheme.onPrimary),
+          radius: 30,
+          backgroundColor: Colors.grey.shade200,
+          backgroundImage: user.avatarUrl.isNotEmpty
+              ? NetworkImage(user.avatarUrl)
+              : null,
+          child: user.avatarUrl.isEmpty
+              ? Text(
+                  user.name.isNotEmpty
+                      ? user.name[0].toUpperCase()
+                      : '?',
+                  style: const TextStyle(fontSize: 24),
+                )
+              : null,
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -94,12 +102,15 @@ class _DashboardView extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Text(
-                    'Pemerintah Kota Surabaya',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onSurface,
+                  Flexible(
+                    child: Text(
+                      user.name,
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface,
+                      ),
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ),
                   const SizedBox(width: 4),
@@ -107,7 +118,7 @@ class _DashboardView extends StatelessWidget {
                 ],
               ),
               Text(
-                'Verified Institutional Authority',
+                '@${user.username}',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -127,7 +138,8 @@ class _DashboardView extends StatelessWidget {
     required String value,
     String? subtitle,
     Color? valueColor,
-    Color? leftBorderColor,
+    Color? borderColor,
+    bool showWarning = false,
     Widget? trailing,
   }) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -137,29 +149,32 @@ class _DashboardView extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: colorScheme.outlineVariant),
+        border: Border.all(
+          color: borderColor ?? colorScheme.outlineVariant,
+          width: borderColor != null ? 1.5 : 1,
+        ),
       ),
-      foregroundDecoration: leftBorderColor != null
-          ? BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              border: Border(
-                left: BorderSide(color: leftBorderColor, width: 4),
-              ),
-            )
-          : null,
       child: Row(
         children: [
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurfaceVariant,
-                  ),
+                Row(
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    if (showWarning) ...[
+                      const SizedBox(width: 4),
+                      Icon(Icons.warning_amber_rounded, size: 14, color: borderColor),
+                    ],
+                  ],
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -195,7 +210,17 @@ class _DashboardView extends StatelessWidget {
     final percentage = (state.completionRate * 100).toStringAsFixed(1);
 
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Text(
+          'Statistik Laporan',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 12),
         IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -203,20 +228,21 @@ class _DashboardView extends StatelessWidget {
               Expanded(
                 child: _buildStatCard(
                   context: context,
-                  label: 'Aduan Stuck',
-                  value: '${state.stuckCount}',
-                  valueColor: const Color(0xFFF59E0B),
-                  leftBorderColor: const Color(0xFFF59E0B),
-                  subtitle: '> 7 hari tanpa update',
+                  label: 'Laporan Aktif',
+                  value: '${state.activeCount}',
+                  subtitle: 'Total aduan berjalan',
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _buildStatCard(
                   context: context,
-                  label: 'Laporan Aktif',
-                  value: '${state.activeCount}',
-                  subtitle: 'Total aduan berjalan',
+                  label: 'Laporan Macet',
+                  value: '${state.stuckCount}',
+                  valueColor: state.stuckCount > 0 ? const Color(0xFFF59E0B) : null,
+                  borderColor: state.stuckCount > 0 ? const Color(0xFFF59E0B) : null,
+                  showWarning: state.stuckCount > 0,
+                  subtitle: '> 7 hari tanpa update',
                 ),
               ),
             ],
@@ -245,18 +271,22 @@ class _DashboardView extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 12),
-            // Placeholder for FR-1.1 (Rerata Respons)
             Expanded(
               child: _buildStatCard(
                 context: context,
                 label: 'Rerata Respons',
                 value: '— ',
-                subtitle: 'Segera hadir',
               ),
             ),
           ],
           ),
         ),
+        const SizedBox(height: 12),
+        _buildKategoriKerusakan(context, state),
+        if (state.cityCounts != null) ...[
+          const SizedBox(height: 12),
+          _buildCityCounts(context, state),
+        ],
       ],
     );
   }
@@ -331,225 +361,201 @@ class _DashboardView extends StatelessWidget {
     );
   }
 
-  Widget _buildCrisisMapCard(BuildContext context) {
+  Widget _buildHeatMapCard(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
-    return Container(
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Peta Krisis\nInfrastruktur',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w600,
-                    color: colorScheme.onSurface,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Heatmap Laporan',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: colorScheme.onSurface,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          decoration: BoxDecoration(
+            color: colorScheme.surfaceContainerLow,
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: colorScheme.outlineVariant),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            children: [
+              Container(
+                height: 200,
+                color: colorScheme.surfaceContainerHigh,
+              ),
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () {
+                      // TODO: implement
+                    },
+                    icon: const Icon(Icons.map, size: 20),
+                    label: const Text('Buka Heatmap'),
                   ),
                 ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(999),
-                  ),
-                  child: Text(
-                    'Surabaya Scope Locked',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: colorScheme.onPrimaryContainer,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            height: 200,
-            color: colorScheme.surfaceContainerHigh,
-            child: Center(
-              child: Icon(
-                Icons.location_on,
-                size: 32,
-                color: colorScheme.primary,
               ),
-            ),
+            ],
           ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  // TODO: implement
-                },
-                icon: const Icon(Icons.map, size: 20),
-                label: const Text('Buka Peta Krisis Penuh'),
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
-  Widget _buildKategoriKerusakan(BuildContext context) {
+  Widget _buildKategoriKerusakan(
+      BuildContext context, PejabatDashboardLoaded state) {
     final colorScheme = Theme.of(context).colorScheme;
+    final counts = state.categoryCounts;
 
-    final categories = [
-      ('Jalan Raya', 0.45),
-      ('PJU (Lampu Jalan)', 0.30),
-      ('Drainase', 0.25),
-    ];
+    if (counts.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final total = counts.values.fold<int>(0, (sum, v) => sum + v);
+    final sorted = counts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
 
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: colorScheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Kategori Kerusakan Terbanyak',
+            'Kerusakan per Kategori',
             style: TextStyle(
-              fontSize: 20,
+              fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: colorScheme.onSurface,
+              color: colorScheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(height: 20),
-          ...categories.map((cat) => Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          cat.$1,
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: colorScheme.onSurface,
-                          ),
-                        ),
-                        Text(
-                          '${(cat.$2 * 100).toInt()}%',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: colorScheme.primary,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(999),
-                      child: LinearProgressIndicator(
-                        value: cat.$2,
-                        minHeight: 8,
-                        backgroundColor: colorScheme.surfaceContainer,
-                        valueColor:
-                            AlwaysStoppedAnimation(colorScheme.primary),
-                      ),
-                    ),
-                  ],
-                ),
-              )),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTopKecamatan(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-
-    final kecamatanData = [
-      ('Sukolilo', '42 Laporan', true),
-      ('Gubeng', '35 Laporan', false),
-      ('Wonokromo', '20 Laporan', false),
-    ];
-
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'Top 3 Kecamatan Krisis',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
-              color: colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 16),
-          ...kecamatanData.asMap().entries.map((entry) {
-            final index = entry.key;
-            final (name, count, isTop) = entry.value;
-
-            return Container(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              decoration: BoxDecoration(
-                border: index < kecamatanData.length - 1
-                    ? Border(
-                        bottom:
-                            BorderSide(color: colorScheme.outlineVariant))
-                    : null,
-              ),
-              child: Row(
+          const SizedBox(height: 12),
+          ...sorted.map((entry) {
+            final pct = total > 0 ? entry.value / total : 0.0;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Column(
                 children: [
-                  CircleAvatar(
-                    radius: 12,
-                    backgroundColor: isTop
-                        ? colorScheme.primary
-                        : colorScheme.surfaceContainerHighest,
-                    child: Text(
-                      '${index + 1}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: isTop
-                            ? colorScheme.onPrimary
-                            : colorScheme.onSurface,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        entry.key,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface,
+                        ),
                       ),
+                      Text(
+                        '${(pct * 100).toInt()}%  |  ${entry.value}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: LinearProgressIndicator(
+                      value: pct,
+                      minHeight: 8,
+                      backgroundColor: colorScheme.surfaceContainer,
+                      valueColor:
+                          AlwaysStoppedAnimation(colorScheme.primary),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      name,
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: colorScheme.onSurface,
+                ],
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCityCounts(
+      BuildContext context, PejabatDashboardLoaded state) {
+    final colorScheme = Theme.of(context).colorScheme;
+    final counts = state.cityCounts!;
+
+    if (counts.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final total = counts.values.fold<int>(0, (sum, v) => sum + v);
+    final sorted = counts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Laporan per Kota',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...sorted.map((entry) {
+            final pct = total > 0 ? entry.value / total : 0.0;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        entry.key,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurface,
+                        ),
                       ),
-                    ),
+                      Text(
+                        '${(pct * 100).toInt()}%  |  ${entry.value}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
                   ),
-                  Text(
-                    count,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: isTop
-                          ? colorScheme.error
-                          : colorScheme.onSurfaceVariant,
+                  const SizedBox(height: 6),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(999),
+                    child: LinearProgressIndicator(
+                      value: pct,
+                      minHeight: 8,
+                      backgroundColor: colorScheme.surfaceContainer,
+                      valueColor:
+                          AlwaysStoppedAnimation(colorScheme.primary),
                     ),
                   ),
                 ],
@@ -577,7 +583,7 @@ class _DashboardView extends StatelessWidget {
             Icon(Icons.warning, color: colorScheme.error),
             const SizedBox(width: 8),
             Text(
-              'Tindakan Segera (Terlama)',
+              'Perlu Tindakan! (Terlama)',
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.w600,
@@ -592,9 +598,8 @@ class _DashboardView extends StatelessWidget {
               child: _buildUrgentCard(
                 context: context,
                 priority: report.urgency,
-                priorityColor: colorScheme.error,
-                priorityBgColor: colorScheme.errorContainer,
-                borderColor: colorScheme.error,
+                priorityColor: colorScheme.onError,
+                priorityBgColor: colorScheme.error,
                 title: report.title,
                 timeAgo: report.timeAgo,
                 upvotes: report.upvotes,
@@ -610,7 +615,6 @@ class _DashboardView extends StatelessWidget {
     required String priority,
     required Color priorityColor,
     required Color priorityBgColor,
-    required Color borderColor,
     required String title,
     required String timeAgo,
     required int upvotes,
@@ -623,7 +627,7 @@ class _DashboardView extends StatelessWidget {
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerLow,
         borderRadius: BorderRadius.circular(8),
-        border: Border(left: BorderSide(color: borderColor, width: 4)),
+        border: Border.all(color: colorScheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

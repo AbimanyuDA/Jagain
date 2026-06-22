@@ -29,6 +29,8 @@ class PejabatDashboardBloc
         statusCounts: stats.statusCounts,
         stuckCount: stats.stuckCount,
         topStuckReports: stats.topStuckReports,
+        categoryCounts: stats.categoryCounts,
+        cityCounts: stats.cityCounts,
       ));
     } catch (e) {
       emit(PejabatDashboardError(e.toString()));

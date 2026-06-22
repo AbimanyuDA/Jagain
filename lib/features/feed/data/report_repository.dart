@@ -307,6 +307,25 @@ class ReportRepository {
     );
   }
 
+  Future<List<ReportPost>> getReportsByWilayah(
+    String wilayah, {
+    String? currentUserId,
+  }) async {
+    final snapshot = await _reports
+        .where('wilayah', isEqualTo: wilayah)
+        .get();
+    return snapshot.docs
+        .map((doc) => _mapToReportPost(doc, currentUserId))
+        .toList();
+  }
+
+  Future<List<ReportPost>> getAllReports({String? currentUserId}) async {
+    final snapshot = await _reports.get();
+    return snapshot.docs
+        .map((doc) => _mapToReportPost(doc, currentUserId))
+        .toList();
+  }
+
   Future<int> countByStatus(ReportPostStatus status) async {
     final result = await _reports
         .where('status', isEqualTo: status.key)

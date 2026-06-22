@@ -17,11 +17,15 @@ class PejabatDashboardLoaded extends PejabatDashboardState {
   final Map<ReportPostStatus, int> statusCounts;
   final int stuckCount;
   final List<ReportPost> topStuckReports;
+  final Map<String, int> categoryCounts;
+  final Map<String, int>? cityCounts;
 
   const PejabatDashboardLoaded({
     required this.statusCounts,
     required this.stuckCount,
     required this.topStuckReports,
+    required this.categoryCounts,
+    this.cityCounts,
   });
 
   int get activeCount =>
@@ -35,7 +39,8 @@ class PejabatDashboardLoaded extends PejabatDashboardState {
   }
 
   @override
-  List<Object?> get props => [statusCounts, stuckCount, topStuckReports];
+  List<Object?> get props =>
+      [statusCounts, stuckCount, topStuckReports, categoryCounts, cityCounts];
 }
 
 class PejabatDashboardError extends PejabatDashboardState {

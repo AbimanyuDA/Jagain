@@ -36,12 +36,7 @@ class StatsBloc extends Bloc<StatsEvent, StatsState> {
         _loadMonthlyTrend(event.provinsi, event.kota),
       ]);
 
-      final stats = results[0]
-          as ({
-            Map<ReportPostStatus, int> statusCounts,
-            int stuckCount,
-            List<ReportPost> topStuckReports,
-          });
+      final stats = results[0] as DashboardStats;
       final topKota = results[1] as List<KotaResolutionStat>;
       final monthlyTrend = results[2] as List<MonthlyReportCount>;
 
