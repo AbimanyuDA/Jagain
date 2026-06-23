@@ -39,11 +39,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _wilayahController = TextEditingController();
   final _codeController = TextEditingController();
 
   int _currentStep = 0;
-  UserRole _selectedRole = UserRole.citizen;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
 
@@ -71,7 +69,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _wilayahController.dispose();
     _codeController.dispose();
     super.dispose();
   }
@@ -260,10 +257,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
         name: _nameController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
-        role: _selectedRole,
-        wilayah: _selectedRole == UserRole.official
-            ? _wilayahController.text.trim()
-            : null,
+        role: UserRole.citizen,
+        wilayah: null,
         address: _addressController.text.trim(),
         phoneNumber: _phoneController.text.trim(),
       ),
@@ -449,38 +444,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 return null;
               },
             ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<UserRole>(
-              initialValue: _selectedRole,
-              decoration: const InputDecoration(
-                labelText: 'Daftar sebagai',
-                prefixIcon: Icon(Icons.badge_outlined),
-              ),
-              items: const [
-                DropdownMenuItem(value: UserRole.citizen, child: Text('Warga')),
-                DropdownMenuItem(
-                  value: UserRole.official,
-                  child: Text('Pejabat'),
-                ),
-              ],
-              onChanged: (val) =>
-                  setState(() => _selectedRole = val ?? UserRole.citizen),
-            ),
-            if (_selectedRole == UserRole.official) ...[
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _wilayahController,
-                decoration: const InputDecoration(
-                  labelText: 'Wilayah Kerja (contoh: Surabaya)',
-                  prefixIcon: Icon(Icons.location_on_outlined),
-                ),
-                validator: (val) =>
-                    (_selectedRole == UserRole.official &&
-                        (val == null || val.trim().isEmpty))
-                    ? 'Wilayah wajib diisi untuk pejabat'
-                    : null,
-              ),
-            ],
+
           ],
         ),
       ),
@@ -610,7 +574,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 child: Text(
                   canResend
                       ? 'Kirim ulang kode'
-                      : 'Kirim ulang dalam ${_resendRemaining.inSeconds}d',
+                      : 'Kirim ulang dalam ${_resendRemaining.inSeconds} detik',
                 ),
               ),
             ),

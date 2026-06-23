@@ -6,6 +6,7 @@ import '../../auth/presentation/bloc/auth_event.dart';
 import '../../auth/presentation/bloc/auth_state.dart';
 import '../../../app/routes.dart';
 import '../../../core/data/indonesia_regions.dart';
+import '../../../core/services/notification_service.dart';
 import '../../../core/widgets/region_selector_bottom_sheet.dart';
 
 class RequestOfficialScreen extends StatefulWidget {
@@ -128,6 +129,13 @@ class _RequestOfficialScreenState extends State<RequestOfficialScreen> {
         listener: (context, state) {
           if (state is AuthAuthenticated) {
             setState(() => _isSubmitting = false);
+            // Kirim notifikasi ke semua admin
+            final user = state.user;
+            NotificationService.instance.sendToAdmins(
+              title: '📋 Pengajuan Pejabat Baru',
+              body: '${user.name} mengajukan diri sebagai pejabat. Segera tinjau pengajuan ini.',
+              data: {'type': 'official_request', 'uid': user.uid},
+            );
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
                 content: Text('Pengajuan berhasil! Menunggu verifikasi admin.'),

@@ -4,6 +4,7 @@ import 'auth_event.dart';
 import 'auth_state.dart';
 import '../../data/auth_repository.dart';
 import '../../../../core/utils/session_manager.dart';
+import '../../../../core/services/notification_service.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final AuthRepository _repository;
@@ -50,6 +51,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
       await SessionManager.addSession(user, email: event.email, password: event.password);
       emit(AuthAuthenticated(user: user));
+      // Simpan FCM token setelah login berhasil
+      await NotificationService.instance.saveTokenToFirestore(user.uid);
     } catch (e) {
       emit(const AuthError('Email atau password salah.'));
     }
@@ -73,8 +76,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
       await SessionManager.addSession(user, email: event.email, password: event.password);
       emit(AuthAuthenticated(user: user));
+      // Simpan FCM token setelah register berhasil
+      await NotificationService.instance.saveTokenToFirestore(user.uid);
     } catch (e) {
-      emit(AuthError(e.toString()));
+      emit(const AuthError('Pendaftaran gagal. Periksa koneksi internet Anda dan coba lagi.'));
     }
   }
 

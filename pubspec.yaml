@@ -55,6 +55,9 @@ dependencies:
   path_provider: ^2.1.5
   shared_preferences: ^2.3.2
   fl_chart: ^0.69.2
+  firebase_messaging: ^16.2.2
+  flutter_local_notifications: ^18.0.1
+  dart_jsonwebtoken: ^2.14.3
 
 dev_dependencies:
   flutter_test:

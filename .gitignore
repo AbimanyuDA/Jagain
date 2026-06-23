@@ -53,3 +53,7 @@ class_diagram.svg
 
 # Claude Code local session state
 .claude/
+
+# Service account credentials (jangan di-push ke GitHub)
+assets/service_account.json
+assets/*.json

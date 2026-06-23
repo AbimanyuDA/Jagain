@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../auth/domain/user_model.dart';
+import '../../../core/services/notification_service.dart';
 import '../data/admin_repository.dart';
 
 const _navy = Color(0xFF0F1E36);
@@ -23,6 +24,13 @@ class _OfficialVerificationScreenState
     try {
       if (verify) {
         await _repository.verifyOfficial(official.uid);
+        // Kirim notifikasi ke pejabat yang baru di-approve
+        await NotificationService.instance.sendToUser(
+          uid: official.uid,
+          title: '✅ Pengajuan Anda Disetujui!',
+          body: 'Selamat ${official.name}! Akun Anda telah diverifikasi sebagai pejabat. Anda sekarang dapat menangani laporan warga.',
+          data: {'type': 'official_approved'},
+        );
       } else {
         await _repository.rejectOfficial(official.uid);
       }

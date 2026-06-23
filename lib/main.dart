@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:go_router/go_router.dart';
 import 'app/routes.dart';
+import 'core/services/notification_service.dart';
 import 'core/theme/theme.dart';
 import 'core/theme/theme_cubit.dart';
 import 'firebase_options.dart';
@@ -20,6 +21,8 @@ void main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    // Inisialisasi push notification service
+    await NotificationService.instance.initialize();
   } catch (e) {
     debugPrint("Pemberitahuan: Inisialisasi Firebase gagal.");
     debugPrint(
@@ -60,8 +63,17 @@ class _AppViewState extends State<_AppView> {
   GoRouter? _router;
 
   @override
+  void initState() {
+    super.initState();
+    // Handle notif tap saat app TERTUTUP (terminated)
+    NotificationService.instance.handleInitialMessage();
+  }
+
+  @override
   Widget build(BuildContext context) {
     _router ??= AppRoutes.createRouter(context);
+    // Berikan referensi router ke NotificationService untuk navigasi
+    NotificationService.instance.setRouter(_router!);
     return MaterialApp.router(
       title: 'Jagain',
       theme: AppTheme.lightTheme,

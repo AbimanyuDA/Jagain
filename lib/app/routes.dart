@@ -76,9 +76,14 @@ class AppRoutes {
           return null;
         }
 
-        // Masih loading → tunggu, jangan redirect dulu
-        if (authState is AuthLoading || authState is AuthInitial) {
-          return isPublicRoute ? null : login;
+        // App baru start → tunggu inisialisasi
+        if (authState is AuthInitial) {
+          return null;
+        }
+
+        // Sedang proses (login/register/upgrade) → jangan redirect, tunggu selesai
+        if (authState is AuthLoading) {
+          return null;
         }
 
         final isLoggedIn = authState is AuthAuthenticated;
@@ -98,8 +103,8 @@ class AppRoutes {
           final user = authState.user;
           final loc = state.matchedLocation;
 
-          // Hanya admin yang boleh akses /admin
-          if (loc == adminDashboard && user.role != UserRole.admin) return feed;
+          // Hanya admin yang boleh akses /admin dan sub-routes-nya
+          if (loc.startsWith(adminDashboard) && user.role != UserRole.admin) return feed;
 
           // Hanya official yang boleh akses /pejabat*
           if (loc.startsWith(pejabatDashboard) && user.role != UserRole.official) return feed;
