@@ -11,6 +11,8 @@ class Comment {
   final bool isOfficial;
   final DateTime createdAt;
   final List<String> likedBy;
+  final String? parentCommentId;
+  final int replyCount;
 
   const Comment({
     required this.id,
@@ -23,9 +25,12 @@ class Comment {
     required this.isOfficial,
     required this.createdAt,
     required this.likedBy,
+    this.parentCommentId,
+    this.replyCount = 0,
   });
 
   String get timeAgo => timeAgoText(createdAt);
   int get likeCount => likedBy.length;
+  bool get isReply => parentCommentId != null;
   bool isLikedBy(String? userId) => userId != null && likedBy.contains(userId);
 }

@@ -10,16 +10,15 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../../../core/widgets/app_network_image.dart';
 import '../../auth/presentation/bloc/auth_bloc.dart';
 import '../../auth/presentation/bloc/auth_state.dart';
-import '../data/comment_repository.dart';
 import '../data/report_repository.dart';
-import '../domain/models/comment.dart';
 import '../domain/models/report_post.dart';
 import '../domain/models/report_update.dart';
+import 'widgets/comments_section.dart';
 
 const double _kValidationRadius = 100.0; // meters
 
-typedef UpdateActionBuilder = Widget Function(
-    BuildContext context, ReportUpdate update);
+typedef UpdateActionBuilder =
+    Widget Function(BuildContext context, ReportUpdate update);
 
 class ReportDetailScreen extends StatefulWidget {
   final ReportPost post;
@@ -38,7 +37,6 @@ class ReportDetailScreen extends StatefulWidget {
 class _ReportDetailScreenState extends State<ReportDetailScreen>
     with SingleTickerProviderStateMixin {
   final _repo = ReportRepository();
-  final _commentRepo = CommentRepository();
 
   late final TabController _tabController;
 
@@ -67,9 +65,9 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
   }
 
   void _listenValidationCount() {
-    _validationCountSub = _repo
-        .watchValidationCount(widget.post.id)
-        .listen((count) {
+    _validationCountSub = _repo.watchValidationCount(widget.post.id).listen((
+      count,
+    ) {
       if (mounted) setState(() => _validationCount = count);
     });
   }
@@ -80,8 +78,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
       // Check stored validation for current user
       final uid = FirebaseAuth.instance.currentUser?.uid;
       if (uid != null) {
-        _myValidationType =
-            await _repo.getUserValidation(widget.post.id, uid);
+        _myValidationType = await _repo.getUserValidation(widget.post.id, uid);
       }
 
       // Check location proximity
@@ -139,9 +136,9 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Gagal mengirim validasi: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Gagal mengirim validasi: $e')));
       }
     } finally {
       if (mounted) setState(() => _isSubmittingValidation = false);
@@ -155,8 +152,9 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
     final isUrgent = post.urgency == 'URGENT';
 
     final authState = context.watch<AuthBloc>().state;
-    final currentUid =
-        authState is AuthAuthenticated ? authState.user.uid : null;
+    final currentUid = authState is AuthAuthenticated
+        ? authState.user.uid
+        : null;
     final isOwnPost = currentUid != null && currentUid == post.authorId;
 
     return Scaffold(
@@ -186,8 +184,10 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
             actions: [
               Container(
                 margin: const EdgeInsets.only(right: 12),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: isUrgent
                       ? const Color(0xFFD32F2F)
@@ -229,9 +229,11 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
                                 ? CachedNetworkImageProvider(post.userAvatarUrl)
                                 : null,
                             child: post.userAvatarUrl.isEmpty
-                                ? Icon(Icons.person,
+                                ? Icon(
+                                    Icons.person,
                                     size: 16,
-                                    color: colorScheme.onSurfaceVariant)
+                                    color: colorScheme.onSurfaceVariant,
+                                  )
                                 : null,
                           ),
                           const SizedBox(width: 8),
@@ -288,7 +290,9 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
                       if (post.wilayah.isNotEmpty)
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 10, vertical: 4),
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: colorScheme.surfaceContainer,
                             borderRadius: BorderRadius.circular(20),
@@ -296,9 +300,11 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.location_on_outlined,
-                                  size: 13,
-                                  color: colorScheme.onSurfaceVariant),
+                              Icon(
+                                Icons.location_on_outlined,
+                                size: 13,
+                                color: colorScheme.onSurfaceVariant,
+                              ),
                               const SizedBox(width: 4),
                               Text(
                                 post.wilayah,
@@ -349,7 +355,9 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
                   unselectedLabelColor: colorScheme.onSurfaceVariant,
                   indicatorColor: colorScheme.primary,
                   labelStyle: const TextStyle(
-                      fontWeight: FontWeight.bold, fontSize: 14),
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
                   tabs: [
                     const Tab(text: 'Updates'),
                     Tab(text: 'Replies (${post.repliesCount})'),
@@ -367,7 +375,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
                         repo: _repo,
                         actionBuilder: widget.updateActionBuilder,
                       ),
-                      _RepliesTab(post: post, repo: _commentRepo),
+                      CommentsSection(post: post),
                     ],
                   ),
                 ),
@@ -424,8 +432,11 @@ class _ImageGalleryState extends State<_ImageGallery> {
                   )
                 : Container(
                     color: colorScheme.surfaceContainer,
-                    child: Icon(Icons.broken_image_outlined,
-                        size: 48, color: colorScheme.onSurfaceVariant),
+                    child: Icon(
+                      Icons.broken_image_outlined,
+                      size: 48,
+                      color: colorScheme.onSurfaceVariant,
+                    ),
                   ),
           ),
         ),
@@ -471,7 +482,6 @@ class _LocationCard extends StatefulWidget {
 }
 
 class _LocationCardState extends State<_LocationCard> {
-
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
@@ -492,13 +502,9 @@ class _LocationCardState extends State<_LocationCard> {
             SizedBox(
               height: 160,
               child: GoogleMap(
-                initialCameraPosition:
-                    CameraPosition(target: target, zoom: 16),
+                initialCameraPosition: CameraPosition(target: target, zoom: 16),
                 markers: {
-                  Marker(
-                    markerId: const MarkerId('report'),
-                    position: target,
-                  ),
+                  Marker(markerId: const MarkerId('report'), position: target),
                 },
                 zoomControlsEnabled: false,
                 myLocationButtonEnabled: false,
@@ -512,8 +518,11 @@ class _LocationCardState extends State<_LocationCard> {
               padding: const EdgeInsets.all(12),
               child: Row(
                 children: [
-                  Icon(Icons.map_outlined,
-                      size: 16, color: colorScheme.onSurfaceVariant),
+                  Icon(
+                    Icons.map_outlined,
+                    size: 16,
+                    color: colorScheme.onSurfaceVariant,
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -602,13 +611,19 @@ class _ValidationSection extends StatelessWidget {
                 ),
                 const Spacer(),
                 if (!isWithinRadius && !isCheckingProximity)
-                  Icon(Icons.lock_outline,
-                      size: 18, color: colorScheme.onSurfaceVariant)
+                  Icon(
+                    Icons.lock_outline,
+                    size: 18,
+                    color: colorScheme.onSurfaceVariant,
+                  )
                 else
                   Row(
                     children: [
-                      Icon(Icons.people_alt_outlined,
-                          size: 14, color: colorScheme.onSurfaceVariant),
+                      Icon(
+                        Icons.people_alt_outlined,
+                        size: 14,
+                        color: colorScheme.onSurfaceVariant,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         '$validationCount Validasi',
@@ -689,10 +704,10 @@ class _ValidationSection extends StatelessWidget {
                     isCheckingProximity
                         ? 'Memeriksa lokasi Anda...'
                         : isWithinRadius
-                            ? 'Your location is within the ${_kValidationRadius.toInt()}m validation radius.'
-                            : distanceMeters != null
-                                ? 'You are outside the validation radius (${(distanceMeters! / 1000).toStringAsFixed(1)} km away).'
-                                : 'You are outside the validation radius.',
+                        ? 'Your location is within the ${_kValidationRadius.toInt()}m validation radius.'
+                        : distanceMeters != null
+                        ? 'You are outside the validation radius (${(distanceMeters! / 1000).toStringAsFixed(1)} km away).'
+                        : 'You are outside the validation radius.',
                     style: TextStyle(
                       fontSize: 12,
                       color: isWithinRadius
@@ -739,16 +754,12 @@ class _ValidationButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: isSelected ? color : color.withAlpha(30),
             borderRadius: BorderRadius.circular(10),
-            border: isSelected
-                ? null
-                : Border.all(color: color.withAlpha(100)),
+            border: isSelected ? null : Border.all(color: color.withAlpha(100)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon,
-                  size: 20,
-                  color: isSelected ? Colors.white : color),
+              Icon(icon, size: 20, color: isSelected ? Colors.white : color),
               const SizedBox(height: 4),
               Text(
                 label,
@@ -840,8 +851,7 @@ class _UpdatesTab extends StatelessWidget {
                             child: Container(
                               width: 2,
                               color: colorScheme.outlineVariant,
-                              margin:
-                                  const EdgeInsets.symmetric(vertical: 4),
+                              margin: const EdgeInsets.symmetric(vertical: 4),
                             ),
                           ),
                       ],
@@ -923,253 +933,6 @@ class _UpdatesTab extends StatelessWidget {
           },
         );
       },
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Replies Tab (reuse existing comment logic)
-// ─────────────────────────────────────────────────────────────────────────────
-
-class _RepliesTab extends StatefulWidget {
-  final ReportPost post;
-  final CommentRepository repo;
-
-  const _RepliesTab({required this.post, required this.repo});
-
-  @override
-  State<_RepliesTab> createState() => _RepliesTabState();
-}
-
-class _RepliesTabState extends State<_RepliesTab> {
-  final TextEditingController _ctrl = TextEditingController();
-
-  @override
-  void dispose() {
-    _ctrl.dispose();
-    super.dispose();
-  }
-
-  void _submitComment(dynamic author) {
-    final text = _ctrl.text.trim();
-    if (text.isEmpty || author == null) return;
-    _ctrl.clear();
-    setState(() {});
-    widget.repo.addComment(
-      reportId: widget.post.id,
-      author: author,
-      text: text,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final authState = context.watch<AuthBloc>().state;
-    final currentUser =
-        authState is AuthAuthenticated ? authState.user : null;
-    final currentUserId = FirebaseAuth.instance.currentUser?.uid;
-
-    return Column(
-      children: [
-        Expanded(
-          child: StreamBuilder<List<Comment>>(
-            stream: widget.repo.watchComments(widget.post.id),
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              final comments = snapshot.data ?? [];
-              if (comments.isEmpty) {
-                return Center(
-                  child: Text(
-                    'Belum ada komentar. Jadilah yang pertama!',
-                    style:
-                        TextStyle(color: colorScheme.onSurfaceVariant),
-                  ),
-                );
-              }
-
-              return ListView.builder(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                itemCount: comments.length,
-                itemBuilder: (context, index) {
-                  final comment = comments[index];
-                  final isLiked = comment.isLikedBy(currentUserId);
-                  final isCommentMine = currentUser != null &&
-                      currentUser.uid == comment.authorId;
-                  final avatar = isCommentMine
-                      ? currentUser.avatarUrl
-                      : comment.authorAvatarUrl;
-                  final name = isCommentMine
-                      ? currentUser.username
-                      : comment.authorUsername;
-
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 16),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        CircleAvatar(
-                          radius: 16,
-                          backgroundColor: colorScheme.surfaceContainer,
-                          backgroundImage: avatar.isNotEmpty
-                              ? CachedNetworkImageProvider(avatar)
-                              : null,
-                          child: avatar.isEmpty
-                              ? Text(
-                                  name.isNotEmpty
-                                      ? name[0].toUpperCase()
-                                      : '?',
-                                  style: const TextStyle(fontSize: 12),
-                                )
-                              : null,
-                        ),
-                        const SizedBox(width: 10),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Text(name,
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 13,
-                                          color: colorScheme.onSurface)),
-                                  const SizedBox(width: 8),
-                                  Text(comment.timeAgo,
-                                      style: TextStyle(
-                                          fontSize: 11,
-                                          color:
-                                              colorScheme.onSurfaceVariant)),
-                                ],
-                              ),
-                              const SizedBox(height: 3),
-                              Text(comment.text,
-                                  style: TextStyle(
-                                      fontSize: 13.5,
-                                      color: colorScheme.onSurface,
-                                      height: 1.35)),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        GestureDetector(
-                          onTap: () {
-                            if (currentUserId == null) return;
-                            widget.repo.toggleLike(
-                              reportId: widget.post.id,
-                              commentId: comment.id,
-                              userId: currentUserId,
-                            );
-                          },
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                isLiked
-                                    ? Icons.favorite
-                                    : Icons.favorite_border_rounded,
-                                size: 14,
-                                color: isLiked
-                                    ? Colors.red
-                                    : colorScheme.onSurfaceVariant,
-                              ),
-                              if (comment.likeCount > 0)
-                                Text('${comment.likeCount}',
-                                    style: TextStyle(
-                                        fontSize: 10,
-                                        color: colorScheme.onSurfaceVariant)),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              );
-            },
-          ),
-        ),
-
-        // Comment input
-        Divider(height: 1, color: colorScheme.outlineVariant),
-        Container(
-          padding: EdgeInsets.fromLTRB(
-              16, 8, 16, MediaQuery.of(context).viewInsets.bottom + 12),
-          color: colorScheme.surface,
-          child: Row(
-            children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: colorScheme.surfaceContainer,
-                backgroundImage:
-                    (currentUser?.avatarUrl.isNotEmpty ?? false)
-                        ? CachedNetworkImageProvider(currentUser!.avatarUrl)
-                        : null,
-                child: (currentUser?.avatarUrl.isEmpty ?? true)
-                    ? Text(
-                        currentUser?.name.isNotEmpty == true
-                            ? currentUser!.name[0].toUpperCase()
-                            : '?',
-                        style: const TextStyle(fontSize: 12),
-                      )
-                    : null,
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: colorScheme.surfaceContainerLow,
-                    borderRadius: BorderRadius.circular(24),
-                    border: Border.all(color: colorScheme.outline),
-                  ),
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: TextField(
-                    controller: _ctrl,
-                    onChanged: (_) => setState(() {}),
-                    style: TextStyle(
-                        fontSize: 14, color: colorScheme.onSurface),
-                    decoration: InputDecoration(
-                      hintText: 'Tulis komentar...',
-                      hintStyle: TextStyle(
-                          color: colorScheme.onSurfaceVariant, fontSize: 13),
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              GestureDetector(
-                onTap: _ctrl.text.trim().isNotEmpty
-                    ? () => _submitComment(currentUser)
-                    : null,
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: _ctrl.text.trim().isNotEmpty
-                        ? colorScheme.primary
-                        : colorScheme.surfaceContainer,
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.send_rounded,
-                    size: 16,
-                    color: _ctrl.text.trim().isNotEmpty
-                        ? Colors.white
-                        : colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
     );
   }
 }

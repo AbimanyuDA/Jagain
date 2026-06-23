@@ -20,10 +20,25 @@ class CommentRepository {
         .map((snapshot) => snapshot.docs.map(_mapToComment).toList());
   }
 
+  /// Cari user lewat awalan username, dipakai untuk autocomplete @mention.
+  Future<List<UserModel>> searchUsersByUsernamePrefix(String prefix) async {
+    if (prefix.isEmpty) return [];
+    final query = await _firestore
+        .collection('users')
+        .where('username', isGreaterThanOrEqualTo: prefix)
+        .where('username', isLessThan: '$prefix')
+        .limit(6)
+        .get();
+    return query.docs
+        .map((doc) => UserModel.fromMap(doc.id, doc.data()))
+        .toList();
+  }
+
   Future<void> addComment({
     required String reportId,
     required UserModel author,
     required String text,
+    String? parentCommentId,
   }) async {
     final isOfficial =
         author.role == UserRole.official || author.role == UserRole.admin;
@@ -38,11 +53,19 @@ class CommentRepository {
       'isOfficial': isOfficial,
       'likedBy': <String>[],
       'createdAt': Timestamp.now(),
+      'parentCommentId': parentCommentId,
+      'replyCount': 0,
     });
 
     await _firestore.collection('reports').doc(reportId).update({
       'commentCount': FieldValue.increment(1),
     });
+
+    if (parentCommentId != null) {
+      await _commentsRef(reportId).doc(parentCommentId).update({
+        'replyCount': FieldValue.increment(1),
+      });
+    }
   }
 
   Future<void> toggleLike({
@@ -90,6 +113,8 @@ class CommentRepository {
       isOfficial: data['isOfficial'] ?? false,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
       likedBy: List<String>.from(data['likedBy'] ?? const []),
+      parentCommentId: data['parentCommentId'] as String?,
+      replyCount: data['replyCount'] ?? 0,
     );
   }
 }

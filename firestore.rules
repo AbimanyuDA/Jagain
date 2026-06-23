@@ -81,11 +81,17 @@ service cloud.firestore {
         allow create: if isSignedIn()
           && request.resource.data.authorId == request.auth.uid
           && request.resource.data.isPinned == false
-          && request.resource.data.likedBy == [];
+          && request.resource.data.likedBy == []
+          && request.resource.data.replyCount == 0
+          && (request.resource.data.parentCommentId == null
+            || request.resource.data.parentCommentId is string);
 
-        // like/unlike (siapa pun) atau pin/unpin (khusus official/admin)
+        // like/unlike (siapa pun), reply menaikkan replyCount komentar induk
+        // (siapa pun), atau pin/unpin (khusus official/admin)
         allow update: if isSignedIn() && (
           unchangedExcept(['likedBy']) ||
+          (unchangedExcept(['replyCount']) &&
+            request.resource.data.replyCount == resource.data.replyCount + 1) ||
           ((isOfficial() || isAdmin()) && unchangedExcept(['isPinned']))
         );
 
