@@ -39,6 +39,9 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
   final _repo = ReportRepository();
 
   late final TabController _tabController;
+  late final Stream<List<ReportUpdate>> _updatesStream = _repo.watchUpdates(
+    widget.post.id,
+  );
 
   // Validation state
   bool _isCheckingProximity = true;
@@ -371,8 +374,7 @@ class _ReportDetailScreenState extends State<ReportDetailScreen>
                     controller: _tabController,
                     children: [
                       _UpdatesTab(
-                        postId: post.id,
-                        repo: _repo,
+                        updatesStream: _updatesStream,
                         actionBuilder: widget.updateActionBuilder,
                       ),
                       CommentsSection(post: post),
@@ -782,25 +784,33 @@ class _ValidationButton extends StatelessWidget {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class _UpdatesTab extends StatelessWidget {
-  final String postId;
-  final ReportRepository repo;
+  final Stream<List<ReportUpdate>> updatesStream;
   final UpdateActionBuilder? actionBuilder;
 
-  const _UpdatesTab({
-    required this.postId,
-    required this.repo,
-    this.actionBuilder,
-  });
+  const _UpdatesTab({required this.updatesStream, this.actionBuilder});
 
   @override
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
 
     return StreamBuilder<List<ReportUpdate>>(
-      stream: repo.watchUpdates(postId),
+      stream: updatesStream,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
+        }
+
+        if (snapshot.hasError) {
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Text(
+                'Gagal memuat update: ${snapshot.error}',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: colorScheme.error),
+              ),
+            ),
+          );
         }
 
         final updates = snapshot.data ?? [];

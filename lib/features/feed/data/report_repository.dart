@@ -55,18 +55,15 @@ class ReportRepository {
     ReportPostStatus status, {
     String? currentUserId,
   }) {
-    return _reports
-        .where('status', isEqualTo: status.key)
-        .snapshots()
-        .map(
-          (snapshot) {
-            final posts = snapshot.docs
-                .map((doc) => _mapToReportPost(doc, currentUserId))
-                .toList();
-            posts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-            return posts;
-          },
-        );
+    return _reports.where('status', isEqualTo: status.key).snapshots().map((
+      snapshot,
+    ) {
+      final posts = snapshot.docs
+          .map((doc) => _mapToReportPost(doc, currentUserId))
+          .toList();
+      posts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return posts;
+    });
   }
 
   // COMMENTED: replaced by new scoped query
@@ -117,7 +114,6 @@ class ReportRepository {
     await _reports.doc(reportId).update(updateData);
   }
 
-
   Future<ReportPost?> getReportById(
     String reportId, {
     String? currentUserId,
@@ -165,13 +161,16 @@ class ReportRepository {
       'createdAt': Timestamp.now(),
     });
 
-    await _reports.doc(reportId).update({
-      'statusUpdateCount': FieldValue.increment(1),
-      'updatedAt': Timestamp.now(),
-    });
-
+    // statusUpdateCount harus naik tepat 1x per dokumen update yang dibuat.
+    // updateReportStatus juga menaikkan statusUpdateCount, jadi kalau status
+    // ikut berubah, increment dilakukan di sana saja (hindari double count).
     if (newStatus != null) {
       await updateReportStatus(reportId: reportId, newStatus: newStatus);
+    } else {
+      await _reports.doc(reportId).update({
+        'statusUpdateCount': FieldValue.increment(1),
+        'updatedAt': Timestamp.now(),
+      });
     }
   }
 
@@ -183,10 +182,7 @@ class ReportRepository {
     List<File>? newImages,
     List<String>? existingImageUrls,
   }) async {
-    final data = <String, dynamic>{
-      'title': title,
-      'description': description,
-    };
+    final data = <String, dynamic>{'title': title, 'description': description};
 
     if (newImages != null && newImages.isNotEmpty) {
       final uploaded = await _storage.uploadImages(
@@ -210,11 +206,7 @@ class ReportRepository {
     required String reportId,
     required String updateId,
   }) async {
-    await _reports
-        .doc(reportId)
-        .collection('updates')
-        .doc(updateId)
-        .delete();
+    await _reports.doc(reportId).collection('updates').doc(updateId).delete();
 
     await _reports.doc(reportId).update({
       'statusUpdateCount': FieldValue.increment(-1),
@@ -239,11 +231,10 @@ class ReportRepository {
     required String userId,
     required String type,
   }) async {
-    await _reports
-        .doc(reportId)
-        .collection('validations')
-        .doc(userId)
-        .set({'type': type, 'createdAt': FieldValue.serverTimestamp()});
+    await _reports.doc(reportId).collection('validations').doc(userId).set({
+      'type': type,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
   }
 
   /// Real-time count of all validations for a report.
@@ -373,7 +364,10 @@ class ReportRepository {
       userAvatarUrl: data['authorAvatarUrl'] ?? '',
       userBadge: data['authorBadge'] ?? 'Citizen Reporter',
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
-      updatedAt: (data['updatedAt'] as Timestamp?)?.toDate() ?? (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      updatedAt:
+          (data['updatedAt'] as Timestamp?)?.toDate() ??
+          (data['createdAt'] as Timestamp?)?.toDate() ??
+          DateTime.now(),
       title: data['title'] ?? '',
       description: data['description'] ?? '',
       imageUrl: imageUrls.isNotEmpty ? imageUrls.first : '',
@@ -447,10 +441,10 @@ class ReportRepository {
     String? provinsi,
     String? wilayah,
   }) async {
-    final result = await _scopedQuery(provinsi: provinsi, wilayah: wilayah)
-        .where('status', isEqualTo: status.key)
-        .count()
-        .get();
+    final result = await _scopedQuery(
+      provinsi: provinsi,
+      wilayah: wilayah,
+    ).where('status', isEqualTo: status.key).count().get();
     return result.count ?? 0;
   }
 
@@ -490,5 +484,4 @@ class ReportRepository {
         .map((doc) => _mapToReportPost(doc, currentUserId))
         .toList();
   }
-
 }

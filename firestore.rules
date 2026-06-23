@@ -70,7 +70,7 @@ service cloud.firestore {
         (unchangedExcept(['commentCount']) &&
           request.resource.data.commentCount == resource.data.commentCount + 1) ||
         ((isOfficial() || isAdmin()) &&
-          unchangedExcept(['status', 'updatedAt', 'statusUpdateCount']))
+          unchangedExcept(['status', 'updatedAt', 'statusUpdateCount', 'officialNote']))
       );
 
       allow delete: if isAdmin();
@@ -98,11 +98,18 @@ service cloud.firestore {
         allow delete: if isSignedIn() && resource.data.authorId == request.auth.uid;
       }
 
-      match /statusUpdates/{updateId} {
+      // Timeline update status laporan. Entri pertama ("Laporan Dibuat")
+      // dibuat otomatis oleh pelapor saat submit; entri berikutnya dibuat
+      // pejabat/admin lewat "Tambah Update" (lihat ReportRepository.addUpdate).
+      match /updates/{updateId} {
         allow read: if true;
-        allow create: if (isOfficial() || isAdmin())
-          && request.resource.data.officialId == request.auth.uid;
-        allow update, delete: if false;
+
+        allow create: if isOfficial() || isAdmin() || (
+          isSignedIn() &&
+          get(/databases/$(database)/documents/reports/$(reportId)).data.authorId == request.auth.uid
+        );
+
+        allow update, delete: if isOfficial() || isAdmin();
       }
     }
 
