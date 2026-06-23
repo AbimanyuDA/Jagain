@@ -1,49 +1,89 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
-class AdminDashboardScreen extends StatelessWidget {
+import '../../../app/routes.dart';
+import '../data/admin_repository.dart';
+import '../domain/models/admin_stats.dart';
+
+class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
+
+  @override
+  State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
+}
+
+class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
+  final AdminRepository _repository = AdminRepository();
+  late Future<AdminStats> _statsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _statsFuture = _repository.loadGlobalStats();
+  }
+
+  Future<void> _refresh() async {
+    final future = _repository.loadGlobalStats();
+    setState(() => _statsFuture = future);
+    await future;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Admin Panel - Jagain'),
-      ),
-      body: GridView.count(
-        crossAxisCount: 2,
-        padding: const EdgeInsets.all(16.0),
-        crossAxisSpacing: 16.0,
-        mainAxisSpacing: 16.0,
-        children: [
-          _buildAdminCard(
-            context,
-            icon: Icons.rate_review,
-            title: 'Moderasi Laporan',
-            subtitle: '5 Menunggu Review',
-            onTap: () {},
-          ),
-          _buildAdminCard(
-            context,
-            icon: Icons.supervised_user_circle,
-            title: 'Kelola Akun Pejabat',
-            subtitle: '2 Pengajuan Baru',
-            onTap: () {},
-          ),
-          _buildAdminCard(
-            context,
-            icon: Icons.category,
-            title: 'Kelola Kategori',
-            subtitle: '6 Kategori Aktif',
-            onTap: () {},
-          ),
-          _buildAdminCard(
-            context,
-            icon: Icons.analytics,
-            title: 'Analitik Sistem',
-            subtitle: 'Grafik & Metrik',
-            onTap: () {},
-          ),
-        ],
+      appBar: AppBar(title: const Text('Admin Panel - Jagain')),
+      body: RefreshIndicator(
+        onRefresh: _refresh,
+        child: FutureBuilder<AdminStats>(
+          future: _statsFuture,
+          builder: (context, snapshot) {
+            final stats = snapshot.data;
+
+            return GridView.count(
+              crossAxisCount: 2,
+              padding: const EdgeInsets.all(16.0),
+              crossAxisSpacing: 16.0,
+              mainAxisSpacing: 16.0,
+              childAspectRatio: 0.85,
+              children: [
+                _buildAdminCard(
+                  context,
+                  icon: Icons.rate_review,
+                  title: 'Moderasi Laporan',
+                  subtitle: stats == null
+                      ? 'Memuat...'
+                      : '${stats.reportsPendingModeration} Menunggu Review',
+                  onTap: () => context.push(AppRoutes.adminModeration),
+                ),
+                _buildAdminCard(
+                  context,
+                  icon: Icons.supervised_user_circle,
+                  title: 'Kelola Akun Pejabat',
+                  subtitle: stats == null
+                      ? 'Memuat...'
+                      : '${stats.pendingOfficialVerifications} Pengajuan Baru',
+                  onTap: () => context.push(AppRoutes.adminOfficials),
+                ),
+                _buildAdminCard(
+                  context,
+                  icon: Icons.category,
+                  title: 'Kelola Kategori',
+                  subtitle: 'Tambah & atur kategori laporan',
+                  onTap: () => context.push(AppRoutes.adminCategories),
+                ),
+                _buildAdminCard(
+                  context,
+                  icon: Icons.analytics,
+                  title: 'Analitik Sistem',
+                  subtitle: stats == null
+                      ? 'Memuat...'
+                      : '${stats.totalUsers} pengguna • ${stats.totalReports} laporan',
+                  onTap: () => context.push(AppRoutes.adminAnalytics),
+                ),
+              ],
+            );
+          },
+        ),
       ),
     );
   }
@@ -70,7 +110,10 @@ class AdminDashboardScreen extends StatelessWidget {
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
               const SizedBox(height: 4),
               Text(

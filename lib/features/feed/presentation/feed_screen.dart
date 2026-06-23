@@ -1,101 +1,195 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:go_router/go_router.dart';
+import 'bloc/feed_bloc.dart';
+import 'bloc/feed_event.dart';
+import 'bloc/feed_state.dart';
+import 'widgets/post_card.dart';
+import '../../profile/presentation/profile_screen.dart';
 
-class FeedScreen extends StatelessWidget {
+class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
 
   @override
+  State<FeedScreen> createState() => _FeedScreenState();
+}
+
+class _FeedScreenState extends State<FeedScreen> {
+  int _currentIndex = 0;
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Jagain - Feed Laporan'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.person),
-            onPressed: () {
-              // Navigasi ke profil / login
-            },
-          )
-        ],
-      ),
-      body: ListView.builder(
-        itemCount: 5,
-        itemBuilder: (context, index) {
-          return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ListTile(
-                    leading: const CircleAvatar(
-                      child: Icon(Icons.person),
-                    ),
-                    title: Text('Warga #${index + 1}'),
-                    subtitle: Text('Dilaporkan pada: 25 Mei 2026'),
-                    trailing: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.orange.shade100,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Text(
-                        'Dilaporkan',
-                        style: TextStyle(color: Colors.orange),
-                      ),
-                    ),
+    return BlocProvider(
+      create: (context) => FeedBloc()..add(LoadFeed()),
+      child: Scaffold(
+        appBar: (_currentIndex == 0 || _currentIndex == 3)
+            ? null
+            : AppBar(
+                leading: IconButton(
+                  icon: const Icon(Icons.add, color: Color(0xFF0F1E36)),
+                  onPressed: () {
+                    context.push('/create-report');
+                  },
+                ),
+                automaticallyImplyLeading: false,
+                title: const Text(
+                  'JAGAIN',
+                  style: TextStyle(
+                    color: Color(0xFF0F1E36),
+                    fontWeight: FontWeight.w900,
+                    fontSize: 22,
+                    letterSpacing: 0.5,
                   ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Ada lubang jalan yang cukup dalam di dekat persimpangan jalan utama, sangat membahayakan pengendara motor malam hari.',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8),
-                  // Mock Image
-                  Container(
-                    height: 180,
-                    width: double.infinity,
-                    color: Colors.grey.shade300,
-                    child: const Center(
-                      child: Icon(Icons.image, size: 50, color: Colors.grey),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.arrow_upward),
-                            onPressed: () {},
-                          ),
-                          const Text('24 Upvotes'),
-                          IconButton(
-                            icon: const Icon(Icons.arrow_downward),
-                            onPressed: () {},
-                          ),
-                        ],
-                      ),
-                      TextButton.icon(
-                        onPressed: () {},
-                        icon: const Icon(Icons.location_on),
-                        label: const Text('Lihat Lokasi'),
-                      ),
-                    ],
+                ),
+                actions: [
+                  IconButton(
+                    icon: const Icon(Icons.search, color: Color(0xFF0F1E36)),
+                    onPressed: () {},
                   ),
                 ],
+                backgroundColor: Colors.white,
+                elevation: 0.5,
               ),
+        body: IndexedStack(
+          index: _currentIndex,
+          children: [
+            BlocBuilder<FeedBloc, FeedState>(
+              builder: (context, state) {
+                if (state is FeedLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                } else if (state is FeedLoaded) {
+                  final posts = state.posts;
+                  return RefreshIndicator(
+                    onRefresh: () async {
+                      context.read<FeedBloc>().add(LoadFeed());
+                    },
+                    child: CustomScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      slivers: [
+                        SliverAppBar(
+                          floating: true,
+                          snap: true,
+                          pinned: false,
+                          leading: IconButton(
+                            icon: const Icon(
+                              Icons.add,
+                              color: Color(0xFF0F1E36),
+                            ),
+                            onPressed: () {
+                              context.push('/create-report');
+                            },
+                          ),
+                          automaticallyImplyLeading: false,
+                          title: const Text(
+                            'JAGAIN',
+                            style: TextStyle(
+                              color: Color(0xFF0F1E36),
+                              fontWeight: FontWeight.w900,
+                              fontSize: 22,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          actions: [
+                            IconButton(
+                              icon: const Icon(
+                                Icons.search,
+                                color: Color(0xFF0F1E36),
+                              ),
+                              onPressed: () {},
+                            ),
+                          ],
+                          backgroundColor: Colors.white,
+                          elevation: 0.5,
+                        ),
+                        SliverPadding(
+                          padding: const EdgeInsets.only(top: 8, bottom: 80),
+                          sliver: SliverList(
+                            delegate: SliverChildBuilderDelegate((
+                              context,
+                              index,
+                            ) {
+                              final post = posts[index];
+                              return PostCard(
+                                post: post,
+                                onUpvotePressed: () {
+                                  context.read<FeedBloc>().add(
+                                    ToggleUpvote(post.id),
+                                  );
+                                },
+                                onDownvotePressed: () {
+                                  context.read<FeedBloc>().add(
+                                    ToggleDownvote(post.id),
+                                  );
+                                },
+                              );
+                            }, childCount: posts.length),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                } else if (state is FeedError) {
+                  return Center(child: Text(state.message));
+                }
+                return const Center(child: Text('Memuat Laporan...'));
+              },
             ),
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          // TODO: Navigasi ke Buat Laporan
-        },
-        label: const Text('Buat Laporan'),
-        icon: const Icon(Icons.add_photo_alternate),
+
+            const Center(
+              child: Text('Halaman Near Me (Peta Laporan Terdekat)'),
+            ),
+
+            const Center(child: Text('Halaman Statistik & Grafik Laporan')),
+
+            const ProfileScreen(),
+          ],
+        ),
+        bottomNavigationBar: Container(
+          decoration: BoxDecoration(
+            border: Border(
+              top: BorderSide(color: Colors.grey.shade200, width: 1),
+            ),
+          ),
+          child: BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
+            type: BottomNavigationBarType.fixed,
+            backgroundColor: Colors.white,
+            selectedItemColor: const Color(0xFFE53935),
+            unselectedItemColor: Colors.grey.shade500,
+            selectedLabelStyle: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+            unselectedLabelStyle: const TextStyle(fontSize: 12),
+            items: const [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.feed_outlined),
+                activeIcon: Icon(Icons.feed),
+                label: 'Feed',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.location_on_outlined),
+                activeIcon: Icon(Icons.location_on),
+                label: 'Near Me',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.bar_chart_outlined),
+                activeIcon: Icon(Icons.bar_chart),
+                label: 'Stats',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person_outline),
+                activeIcon: Icon(Icons.person),
+                label: 'Profile',
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

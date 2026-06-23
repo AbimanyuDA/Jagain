@@ -1,56 +1,112 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
+import '../../data/auth_repository.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  AuthBloc() : super(AuthInitial()) {
+  final AuthRepository _repository;
+  StreamSubscription? _authSubscription;
+
+  AuthBloc({required AuthRepository repository})
+      : _repository = repository,
+        super(AuthInitial()) {
     on<AuthCheckRequested>(_onAuthCheckRequested);
     on<AuthLoginRequested>(_onAuthLoginRequested);
+    on<AuthRegisterRequested>(_onAuthRegisterRequested);
     on<AuthLogoutRequested>(_onAuthLogoutRequested);
+    on<AuthUpgradeToOfficialRequested>(_onUpgradeToOfficial);
   }
 
-  void _onAuthCheckRequested(AuthCheckRequested event, Emitter<AuthState> emit) async {
+  void _onAuthCheckRequested(
+    AuthCheckRequested event,
+    Emitter<AuthState> emit,
+  ) async {
     emit(AuthLoading());
-    // TODO: Implement actual Firebase Auth persistence check
-    await Future.delayed(const Duration(milliseconds: 500));
-    emit(AuthUnauthenticated()); // Default for now
+
+    await emit.forEach(
+      _repository.authStateChanges,
+      onData: (user) {
+        if (user == null) return AuthUnauthenticated();
+        return AuthAuthenticated(user: user);
+      },
+      onError: (_, _) => AuthUnauthenticated(),
+    );
   }
 
-  void _onAuthLoginRequested(AuthLoginRequested event, Emitter<AuthState> emit) async {
+  void _onAuthLoginRequested(
+    AuthLoginRequested event,
+    Emitter<AuthState> emit,
+  ) async {
     emit(AuthLoading());
     try {
-      // TODO: Implement actual Firebase Sign In & fetch role from Firestore
-      await Future.delayed(const Duration(seconds: 1));
-      
-      // Temporary stub for demonstration
-      if (event.email.contains('admin')) {
-        emit(AuthAuthenticated(
-          userId: 'admin_123',
-          email: event.email,
-          role: UserRole.admin,
-        ));
-      } else if (event.email.contains('pejabat')) {
-        emit(AuthAuthenticated(
-          userId: 'pejabat_123',
-          email: event.email,
-          role: UserRole.official,
-        ));
-      } else {
-        emit(AuthAuthenticated(
-          userId: 'user_123',
-          email: event.email,
-          role: UserRole.citizen,
-        ));
-      }
+      final user = await _repository.signIn(
+        email: event.email,
+        password: event.password,
+      );
+      emit(AuthAuthenticated(user: user));
+    } catch (e) {
+      emit(const AuthError('Email atau password salah.'));
+    }
+  }
+
+  void _onAuthRegisterRequested(
+    AuthRegisterRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    emit(AuthLoading());
+    try {
+      final user = await _repository.register(
+        name: event.name,
+        username: event.username,
+        email: event.email,
+        password: event.password,
+        role: event.role,
+        wilayah: event.wilayah,
+      );
+      emit(AuthAuthenticated(user: user));
     } catch (e) {
       emit(AuthError(e.toString()));
     }
   }
 
-  void _onAuthLogoutRequested(AuthLogoutRequested event, Emitter<AuthState> emit) async {
+  void _onAuthLogoutRequested(
+    AuthLogoutRequested event,
+    Emitter<AuthState> emit,
+  ) async {
     emit(AuthLoading());
-    // TODO: Implement actual Firebase Sign Out
-    await Future.delayed(const Duration(milliseconds: 500));
-    emit(AuthUnauthenticated());
+    try {
+      await _repository.signOut();
+      emit(AuthUnauthenticated());
+    } catch (e) {
+      emit(AuthError(e.toString()));
+    }
+  }
+
+  void _onUpgradeToOfficial(
+    AuthUpgradeToOfficialRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    final currentState = state;
+    if (currentState is! AuthAuthenticated) return;
+
+    emit(AuthLoading());
+    try {
+      final updatedUser = await _repository.requestUpgradeToOfficial(
+        uid: currentState.user.uid,
+        wilayah: event.wilayah,
+      );
+      emit(AuthAuthenticated(user: updatedUser));
+    } catch (e) {
+      // Kembalikan state sebelumnya + emit error
+      emit(AuthAuthenticated(user: currentState.user));
+      emit(AuthError(e.toString()));
+    }
+  }
+
+  @override
+  Future<void> close() {
+    _authSubscription?.cancel();
+    return super.close();
   }
 }
