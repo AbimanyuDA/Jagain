@@ -86,6 +86,12 @@ class AppRoutes {
           return null;
         }
 
+        // Error transien (mis. gagal switch akun, gagal upgrade) → jangan
+        // paksa ke /login, biarkan layar saat ini menampilkan pesan errornya.
+        if (authState is AuthError) {
+          return null;
+        }
+
         final isLoggedIn = authState is AuthAuthenticated;
 
         // Belum login dan bukan halaman publik → paksa ke login
@@ -104,10 +110,13 @@ class AppRoutes {
           final loc = state.matchedLocation;
 
           // Hanya admin yang boleh akses /admin dan sub-routes-nya
-          if (loc.startsWith(adminDashboard) && user.role != UserRole.admin) return feed;
+          if (loc.startsWith(adminDashboard) && user.role != UserRole.admin)
+            return feed;
 
           // Hanya official yang boleh akses /pejabat*
-          if (loc.startsWith(pejabatDashboard) && user.role != UserRole.official) return feed;
+          if (loc.startsWith(pejabatDashboard) &&
+              user.role != UserRole.official)
+            return feed;
         }
 
         // Lainnya → tidak ada redirect
@@ -128,8 +137,9 @@ class AppRoutes {
         ),
         GoRoute(
           path: login,
-          builder: (BuildContext context, GoRouterState state) =>
-              const LoginScreen(),
+          builder: (BuildContext context, GoRouterState state) => LoginScreen(
+            prefillIdentifier: state.uri.queryParameters['prefill'],
+          ),
         ),
         GoRoute(
           path: register,
@@ -190,11 +200,13 @@ class AppRoutes {
         ),
         GoRoute(
           path: settings,
-          builder: (BuildContext context, GoRouterState state) => const SettingsScreen(),
+          builder: (BuildContext context, GoRouterState state) =>
+              const SettingsScreen(),
         ),
         GoRoute(
           path: requestOfficial,
-          builder: (BuildContext context, GoRouterState state) => const RequestOfficialScreen(),
+          builder: (BuildContext context, GoRouterState state) =>
+              const RequestOfficialScreen(),
         ),
         GoRoute(
           path: pejabatReportList,

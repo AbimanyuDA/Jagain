@@ -113,18 +113,23 @@ class _ProfileViewState extends State<_ProfileView>
                           : null,
                       backgroundColor: colorScheme.surfaceContainer,
                       child: profile.avatarUrl.isEmpty
-                          ? Icon(Icons.person,
-                              color: colorScheme.onSurfaceVariant)
+                          ? Icon(
+                              Icons.person,
+                              color: colorScheme.onSurfaceVariant,
+                            )
                           : null,
                     ),
                     title: Text(
                       profile.username,
                       style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: colorScheme.onSurface),
+                        fontWeight: FontWeight.bold,
+                        color: colorScheme.onSurface,
+                      ),
                     ),
-                    trailing: const Icon(Icons.check_circle_rounded,
-                        color: Color(0xFF00A550)),
+                    trailing: const Icon(
+                      Icons.check_circle_rounded,
+                      color: Color(0xFF00A550),
+                    ),
                     onTap: () => Navigator.pop(sheetContext),
                   ),
                   if (snapshot.connectionState == ConnectionState.waiting)
@@ -145,9 +150,7 @@ class _ProfileViewState extends State<_ProfileView>
                           backgroundColor: colorScheme.surfaceContainer,
                           child: avatarUrl.isEmpty
                               ? Text(
-                                  name.isNotEmpty
-                                      ? name[0].toUpperCase()
-                                      : '?',
+                                  name.isNotEmpty ? name[0].toUpperCase() : '?',
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.bold,
@@ -156,26 +159,54 @@ class _ProfileViewState extends State<_ProfileView>
                                 )
                               : null,
                         ),
-                        title: Text(username,
-                            style: TextStyle(
-                                fontWeight: FontWeight.bold,
-                                color: colorScheme.onSurface)),
-                        subtitle: Text(name,
-                            style: TextStyle(
-                                color: colorScheme.onSurfaceVariant,
-                                fontSize: 12)),
-                        onTap: () {
+                        title: Text(
+                          username,
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: colorScheme.onSurface,
+                          ),
+                        ),
+                        subtitle: Text(
+                          name,
+                          style: TextStyle(
+                            color: colorScheme.onSurfaceVariant,
+                            fontSize: 12,
+                          ),
+                        ),
+                        onTap: () async {
+                          final uid = session['uid'] as String? ?? '';
+                          final hasCredential =
+                              await SessionManager.getPassword(uid) ??
+                              session['password'] as String?;
+
+                          if (!context.mounted) return;
                           Navigator.pop(sheetContext);
-                          context.read<AuthBloc>().add(
-                              AuthSwitchAccountRequested(
-                                  session['uid'] ?? ''));
+
+                          if (hasCredential != null) {
+                            // Kredensial sudah tersimpan aman → switch instan
+                            // tanpa minta password lagi.
+                            context.read<AuthBloc>().add(
+                              AuthSwitchAccountRequested(uid),
+                            );
+                          } else {
+                            // Belum pernah login pakai password di device ini
+                            // → arahkan ke form login, sudah terisi otomatis
+                            // dengan email/username akun yang dipilih.
+                            final identifier =
+                                (session['username'] ?? session['email'])
+                                    as String?;
+                            context.push(
+                              '/login?adding=true${identifier != null ? '&prefill=$identifier' : ''}',
+                            );
+                          }
                         },
                       );
                     }),
                   Divider(
-                      color: colorScheme.outline,
-                      height: 1,
-                      thickness: 0.5),
+                    color: colorScheme.outline,
+                    height: 1,
+                    thickness: 0.5,
+                  ),
                   ListTile(
                     leading: Container(
                       width: 40,
@@ -184,13 +215,18 @@ class _ProfileViewState extends State<_ProfileView>
                         border: Border.all(color: colorScheme.outline),
                         shape: BoxShape.circle,
                       ),
-                      child: Icon(Icons.add_rounded,
-                          color: colorScheme.onSurface),
+                      child: Icon(
+                        Icons.add_rounded,
+                        color: colorScheme.onSurface,
+                      ),
                     ),
-                    title: Text('Tambah Akun Jagain',
-                        style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: colorScheme.onSurface)),
+                    title: Text(
+                      'Tambah Akun Jagain',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: colorScheme.onSurface,
+                      ),
+                    ),
                     onTap: () {
                       Navigator.pop(sheetContext);
                       context.push('/login?adding=true');
@@ -212,56 +248,79 @@ class _ProfileViewState extends State<_ProfileView>
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<ProfileBloc, ProfileState>(
-      listenWhen: (previous, current) =>
-          current is ProfileLoaded && current.redeemSuccessMessage != null,
+    return BlocListener<AuthBloc, AuthState>(
+      listenWhen: (previous, current) => current is AuthError,
       listener: (context, state) {
-        if (state is ProfileLoaded && state.redeemSuccessMessage != null) {
+        if (state is AuthError) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.celebration_rounded,
-                      color: Colors.white, size: 20),
-                  const SizedBox(width: 10),
-                  Text(state.redeemSuccessMessage!),
-                ],
-              ),
-              backgroundColor: ProfileColors.statusSolved,
+              content: Text(state.message),
+              backgroundColor: Colors.red,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
               margin: const EdgeInsets.all(16),
-              duration: const Duration(seconds: 3),
             ),
           );
         }
       },
-      builder: (context, state) {
-        final authState = context.watch<AuthBloc>().state;
-        if (state is ProfileLoading ||
-            authState is AuthLoading ||
-            authState is AuthSwitching) {
+      child: BlocConsumer<ProfileBloc, ProfileState>(
+        listenWhen: (previous, current) =>
+            current is ProfileLoaded && current.redeemSuccessMessage != null,
+        listener: (context, state) {
+          if (state is ProfileLoaded && state.redeemSuccessMessage != null) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Row(
+                  children: [
+                    const Icon(
+                      Icons.celebration_rounded,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Text(state.redeemSuccessMessage!),
+                  ],
+                ),
+                backgroundColor: ProfileColors.statusSolved,
+                behavior: SnackBarBehavior.floating,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                margin: const EdgeInsets.all(16),
+                duration: const Duration(seconds: 3),
+              ),
+            );
+          }
+        },
+        builder: (context, state) {
+          final authState = context.watch<AuthBloc>().state;
+          if (state is ProfileLoading ||
+              authState is AuthLoading ||
+              authState is AuthSwitching) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (state is ProfileError) {
+            return Scaffold(body: Center(child: Text(state.message)));
+          }
+          if (state is ProfileLoaded) {
+            return _buildLoadedView(context, state.profile);
+          }
           return const Scaffold(
-              body: Center(child: CircularProgressIndicator()));
-        }
-        if (state is ProfileError) {
-          return Scaffold(body: Center(child: Text(state.message)));
-        }
-        if (state is ProfileLoaded) {
-          return _buildLoadedView(context, state.profile);
-        }
-        return const Scaffold(
-            body: Center(child: CircularProgressIndicator()));
-      },
+            body: Center(child: CircularProgressIndicator()),
+          );
+        },
+      ),
     );
   }
 
   Widget _buildLoadedView(BuildContext context, UserProfile profile) {
     final colorScheme = Theme.of(context).colorScheme;
     final scaffoldBg = Theme.of(context).scaffoldBackgroundColor;
-    final isOwnProfile =
-        profile.id == FirebaseAuth.instance.currentUser?.uid;
+    final isOwnProfile = profile.id == FirebaseAuth.instance.currentUser?.uid;
 
     return Scaffold(
       backgroundColor: scaffoldBg,
@@ -277,8 +336,11 @@ class _ProfileViewState extends State<_ProfileView>
                 padding: EdgeInsets.zero,
               )
             : IconButton(
-                icon: Icon(Icons.arrow_back_ios_new_rounded,
-                    color: colorScheme.onSurface, size: 20),
+                icon: Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: colorScheme.onSurface,
+                  size: 20,
+                ),
                 onPressed: () => context.pop(),
                 padding: EdgeInsets.zero,
               ),
@@ -300,12 +362,18 @@ class _ProfileViewState extends State<_ProfileView>
                     ),
                     if (profile.isVerifiedCitizen) ...[
                       const SizedBox(width: 4),
-                      Icon(Icons.verified_rounded,
-                          color: colorScheme.primary, size: 16),
+                      Icon(
+                        Icons.verified_rounded,
+                        color: colorScheme.primary,
+                        size: 16,
+                      ),
                     ],
                     const SizedBox(width: 2),
-                    Icon(Icons.keyboard_arrow_down_rounded,
-                        color: colorScheme.onSurface, size: 20),
+                    Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: colorScheme.onSurface,
+                      size: 20,
+                    ),
                   ],
                 ),
               )
@@ -323,8 +391,11 @@ class _ProfileViewState extends State<_ProfileView>
                   ),
                   if (profile.isVerifiedCitizen) ...[
                     const SizedBox(width: 4),
-                    Icon(Icons.verified_rounded,
-                        color: colorScheme.primary, size: 16),
+                    Icon(
+                      Icons.verified_rounded,
+                      color: colorScheme.primary,
+                      size: 16,
+                    ),
                   ],
                 ],
               ),
@@ -347,8 +418,9 @@ class _ProfileViewState extends State<_ProfileView>
         onRefresh: () async {
           final profileBloc = context.read<ProfileBloc>();
           profileBloc.add(LoadProfile(username: widget.targetUsername));
-          await profileBloc.stream
-              .firstWhere((s) => s is ProfileLoaded || s is ProfileError);
+          await profileBloc.stream.firstWhere(
+            (s) => s is ProfileLoaded || s is ProfileError,
+          );
         },
         child: NestedScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -357,8 +429,7 @@ class _ProfileViewState extends State<_ProfileView>
               SliverToBoxAdapter(
                 child: Column(
                   children: [
-                    ProfileHeader(
-                        profile: profile, isOwnProfile: isOwnProfile),
+                    ProfileHeader(profile: profile, isOwnProfile: isOwnProfile),
                     ImpactStatsCard(profile: profile),
                   ],
                 ),
@@ -387,17 +458,19 @@ class _ProfileViewState extends State<_ProfileView>
                     fontWeight: FontWeight.w500,
                   ),
                   tabs: _tabs
-                      .map((t) => Tab(
-                            height: 44,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(t.icon, size: 15),
-                                const SizedBox(width: 5),
-                                Text(t.label),
-                              ],
-                            ),
-                          ))
+                      .map(
+                        (t) => Tab(
+                          height: 44,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(t.icon, size: 15),
+                              const SizedBox(width: 5),
+                              Text(t.label),
+                            ],
+                          ),
+                        ),
+                      )
                       .toList(),
                 ),
               ),

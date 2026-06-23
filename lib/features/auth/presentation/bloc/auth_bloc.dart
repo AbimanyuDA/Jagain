@@ -46,15 +46,21 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     try {
       final user = await _repository.signIn(
-        email: event.email,
+        identifier: event.email,
         password: event.password,
       );
-      await SessionManager.addSession(user, email: event.email, password: event.password);
+      // Simpan email asli hasil resolve (event.email bisa berupa username),
+      // bukan apa yang diketik user, supaya switch akun berikutnya benar.
+      await SessionManager.addSession(
+        user,
+        email: user.email,
+        password: event.password,
+      );
       emit(AuthAuthenticated(user: user));
       // Simpan FCM token setelah login berhasil
       await NotificationService.instance.saveTokenToFirestore(user.uid);
     } catch (e) {
-      emit(const AuthError('Email atau password salah.'));
+      emit(const AuthError('Email/username atau password salah.'));
     }
   }
 
@@ -74,12 +80,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         address: event.address,
         phoneNumber: event.phoneNumber,
       );
-      await SessionManager.addSession(user, email: event.email, password: event.password);
+      await SessionManager.addSession(
+        user,
+        email: event.email,
+        password: event.password,
+      );
       emit(AuthAuthenticated(user: user));
       // Simpan FCM token setelah register berhasil
       await NotificationService.instance.saveTokenToFirestore(user.uid);
     } catch (e) {
-      emit(const AuthError('Pendaftaran gagal. Periksa koneksi internet Anda dan coba lagi.'));
+      emit(
+        const AuthError(
+          'Pendaftaran gagal. Periksa koneksi internet Anda dan coba lagi.',
+        ),
+      );
     }
   }
 
@@ -117,7 +131,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  void _onAuthUserRefreshed(AuthUserRefreshed event, Emitter<AuthState> emit) async {
+  void _onAuthUserRefreshed(
+    AuthUserRefreshed event,
+    Emitter<AuthState> emit,
+  ) async {
     await SessionManager.addSession(event.user);
     emit(AuthAuthenticated(user: event.user));
   }
@@ -136,17 +153,42 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final sessions = await SessionManager.getSessions();
       final session = sessions.firstWhere((s) => s['uid'] == event.uid);
       final email = session['email'];
-      final password = session['password'];
+      // Coba secure storage dulu; fallback ke field 'password' lama di JSON
+      // (format sebelum migrasi ke secure storage) supaya akun yang sudah
+      // tersimpan sebelum perbaikan ini tidak tiba-tiba kehilangan akses.
+      final password =
+          await SessionManager.getPassword(event.uid) ??
+          session['password'] as String?;
 
       if (email != null && password != null) {
-        final user = await _repository.signIn(email: email, password: password);
+        final user = await _repository.signIn(
+          identifier: email,
+          password: password,
+        );
         await SessionManager.addSession(user, email: email, password: password);
         emit(AuthAuthenticated(user: user));
       } else {
-        emit(AuthError('Kredensial sesi tidak ditemukan untuk login otomatis.'));
+        emit(
+          const AuthError(
+            'Kredensial sesi tidak ditemukan untuk login otomatis.',
+          ),
+        );
+        _restorePreviousUser(currentState, emit);
       }
     } catch (e) {
       emit(AuthError('Gagal berganti akun: ${e.toString()}'));
+      _restorePreviousUser(currentState, emit);
+    }
+  }
+
+  /// Setelah switch akun gagal, kembalikan bloc ke state semula (akun yang
+  /// sedang aktif sebelum switch dicoba) supaya UI tidak "menggantung" di
+  /// AuthError dan router tidak menganggap user logout.
+  void _restorePreviousUser(AuthState previousState, Emitter<AuthState> emit) {
+    if (previousState is AuthAuthenticated) {
+      emit(AuthAuthenticated(user: previousState.user));
+    } else {
+      emit(AuthUnauthenticated());
     }
   }
 

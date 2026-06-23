@@ -61,11 +61,23 @@ class AuthRepository {
     }
   }
 
+  /// [identifier] boleh berupa email ATAU username. Kalau bukan format
+  /// email (tidak mengandung '@'), di-resolve dulu ke email lewat lookup
+  /// username di Firestore sebelum sign in ke Firebase Auth.
   Future<UserModel> signIn({
-    required String email,
+    required String identifier,
     required String password,
   }) async {
     try {
+      var email = identifier;
+      if (!identifier.contains('@')) {
+        final userByUsername = await getUserByUsername(identifier);
+        if (userByUsername == null) {
+          throw Exception('Username tidak ditemukan.');
+        }
+        email = userByUsername.email;
+      }
+
       final credential = await _auth.signInWithEmailAndPassword(
         email: email,
         password: password,
@@ -150,7 +162,7 @@ class AuthRepository {
 
         if (reportsQuery.docs.isNotEmpty) {
           final batch = _firestore.batch();
-          
+
           String badge = 'Citizen Reporter';
           if (updated.role == UserRole.official) {
             badge = 'Pejabat';
@@ -196,7 +208,9 @@ class AuthRepository {
           await batch.commit();
         }
       } catch (e) {
-        print('Error syncing comments (possibly missing collectionGroup index): $e');
+        print(
+          'Error syncing comments (possibly missing collectionGroup index): $e',
+        );
       }
     }
 
