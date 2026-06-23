@@ -12,6 +12,15 @@ class AuthInitial extends AuthState {}
 
 class AuthLoading extends AuthState {}
 
+class AuthSwitching extends AuthState {
+  final UserModel previousUser;
+
+  const AuthSwitching({required this.previousUser});
+
+  @override
+  List<Object?> get props => [previousUser];
+}
+
 class AuthAuthenticated extends AuthState {
   final UserModel user;
 

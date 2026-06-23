@@ -7,11 +7,18 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
-// Baca local.properties untuk mengambil key yang tidak di-commit ke Git
-val localProperties = Properties()
-val localPropertiesFile = rootProject.file("local.properties")
-if (localPropertiesFile.exists()) {
-    localPropertiesFile.inputStream().use { localProperties.load(it) }
+// Read secrets from the Flutter project's .env (single source of truth for all
+// environment values, gitignored) so native config doesn't need its own copy.
+val dotenv = Properties()
+val dotenvFile = rootProject.file("../.env")
+if (dotenvFile.exists()) {
+    dotenvFile.forEachLine { line ->
+        val trimmed = line.trim()
+        if (trimmed.isNotEmpty() && !trimmed.startsWith("#") && trimmed.contains("=")) {
+            val (key, value) = trimmed.split("=", limit = 2)
+            dotenv.setProperty(key.trim(), value.trim())
+        }
+    }
 }
 
 android {
@@ -38,9 +45,8 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
-        // Suplai nilai untuk placeholder ${googleMapsApiKey} di AndroidManifest.xml
         manifestPlaceholders["googleMapsApiKey"] =
-            localProperties.getProperty("GOOGLE_MAPS_API_KEY", "")
+            dotenv.getProperty("GOOGLE_MAPS_API_KEY", "")
     }
 
     buildTypes {

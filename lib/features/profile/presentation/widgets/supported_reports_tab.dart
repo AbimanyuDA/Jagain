@@ -1,4 +1,6 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import '../../../../../core/widgets/app_network_image.dart';
 import '../../domain/models/user_profile.dart';
 import 'profile_theme.dart';
 
@@ -70,16 +72,11 @@ class _SupportedReportCard extends StatelessWidget {
                   height: 130,
                   width: double.infinity,
                   child: report.imageUrl.isNotEmpty
-                      ? Image.network(
-                          report.imageUrl,
+                      ? AppNetworkImage(
+                          url: report.imageUrl,
+                          height: 130,
+                          width: double.infinity,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, _, _) => Container(
-                            color: Colors.grey.shade200,
-                            child: const Icon(
-                              Icons.broken_image_outlined,
-                              color: Colors.grey,
-                            ),
-                          ),
                         )
                       : Container(
                           color: Colors.grey.shade200,
@@ -172,7 +169,7 @@ class _SupportedReportCard extends StatelessWidget {
                       CircleAvatar(
                         radius: 10,
                         backgroundImage: report.authorAvatarUrl.isNotEmpty
-                            ? NetworkImage(report.authorAvatarUrl)
+                            ? CachedNetworkImageProvider(report.authorAvatarUrl)
                             : null,
                         backgroundColor: Colors.grey.shade200,
                         child: report.authorAvatarUrl.isEmpty

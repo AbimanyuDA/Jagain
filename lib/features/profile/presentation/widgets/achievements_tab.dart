@@ -151,7 +151,11 @@ class _BadgeCard extends StatelessWidget {
               ),
               child: Center(
                 child: badge.isUnlocked
-                    ? Text(badge.icon, style: const TextStyle(fontSize: 26))
+                    ? Icon(
+                        _getBadgeIconData(badge.icon),
+                        color: Colors.white,
+                        size: 26,
+                      )
                     : const Icon(
                         Icons.lock_rounded,
                         color: Colors.white,
@@ -244,7 +248,13 @@ class _RewardCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
             ),
             child: Center(
-              child: Text(reward.icon, style: const TextStyle(fontSize: 24)),
+              child: Icon(
+                _getRewardIconData(reward.icon),
+                size: 24,
+                color: isAvailable
+                    ? ProfileColors.primary
+                    : Colors.grey.shade500,
+              ),
             ),
           ),
           const SizedBox(width: 12),
@@ -371,5 +381,39 @@ class _SectionHeader extends StatelessWidget {
         ],
       ],
     );
+  }
+}
+
+IconData _getRewardIconData(String emoji) {
+  switch (emoji) {
+    case '🚗':
+      return Icons.local_taxi_outlined;
+    case '📜':
+      return Icons.card_membership_outlined;
+    case '💧':
+      return Icons.water_drop_outlined;
+    case '⚡':
+      return Icons.electric_bolt_outlined;
+    default:
+      return Icons.card_giftcard_outlined;
+  }
+}
+
+IconData _getBadgeIconData(String emoji) {
+  switch (emoji) {
+    case '🏅':
+      return Icons.workspace_premium_outlined;
+    case '🛣️':
+      return Icons.add_road_outlined;
+    case '🤝':
+      return Icons.handshake_outlined;
+    case '📣':
+      return Icons.campaign_outlined;
+    case '💡':
+      return Icons.lightbulb_outline;
+    case '👑':
+      return Icons.workspace_premium_rounded;
+    default:
+      return Icons.military_tech_outlined;
   }
 }

@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+
 import 'bloc/feed_bloc.dart';
 import 'bloc/feed_event.dart';
 import 'bloc/feed_state.dart';
 import 'widgets/post_card.dart';
 import '../../profile/presentation/profile_screen.dart';
+import '../../near_me/presentation/near_me_screen.dart';
+import '../../stats/presentation/stats_screen.dart';
 
 class FeedScreen extends StatefulWidget {
   const FeedScreen({super.key});
@@ -16,42 +19,42 @@ class FeedScreen extends StatefulWidget {
 
 class _FeedScreenState extends State<FeedScreen> {
   int _currentIndex = 0;
+  late final PageController _pageController;
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController(keepPage: true);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _onTabTapped(int index) {
+    setState(() => _currentIndex = index);
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+
     return BlocProvider(
       create: (context) => FeedBloc()..add(LoadFeed()),
       child: Scaffold(
-        appBar: (_currentIndex == 0 || _currentIndex == 3)
-            ? null
-            : AppBar(
-                leading: IconButton(
-                  icon: const Icon(Icons.add, color: Color(0xFF0F1E36)),
-                  onPressed: () {
-                    context.push('/create-report');
-                  },
-                ),
-                automaticallyImplyLeading: false,
-                title: const Text(
-                  'JAGAIN',
-                  style: TextStyle(
-                    color: Color(0xFF0F1E36),
-                    fontWeight: FontWeight.w900,
-                    fontSize: 22,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                actions: [
-                  IconButton(
-                    icon: const Icon(Icons.search, color: Color(0xFF0F1E36)),
-                    onPressed: () {},
-                  ),
-                ],
-                backgroundColor: Colors.white,
-                elevation: 0.5,
-              ),
-        body: IndexedStack(
-          index: _currentIndex,
+        body: PageView(
+          controller: _pageController,
+          physics: const ClampingScrollPhysics(),
+          onPageChanged: (index) {
+            setState(() => _currentIndex = index);
+          },
           children: [
             BlocBuilder<FeedBloc, FeedState>(
               builder: (context, state) {
@@ -71,19 +74,19 @@ class _FeedScreenState extends State<FeedScreen> {
                           snap: true,
                           pinned: false,
                           leading: IconButton(
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.add,
-                              color: Color(0xFF0F1E36),
+                              color: colorScheme.onSurface,
                             ),
                             onPressed: () {
                               context.push('/create-report');
                             },
                           ),
                           automaticallyImplyLeading: false,
-                          title: const Text(
+                          title: Text(
                             'JAGAIN',
                             style: TextStyle(
-                              color: Color(0xFF0F1E36),
+                              color: colorScheme.onSurface,
                               fontWeight: FontWeight.w900,
                               fontSize: 22,
                               letterSpacing: 0.5,
@@ -91,15 +94,17 @@ class _FeedScreenState extends State<FeedScreen> {
                           ),
                           actions: [
                             IconButton(
-                              icon: const Icon(
-                                Icons.search,
-                                color: Color(0xFF0F1E36),
+                              icon: Icon(
+                                Icons.search_rounded,
+                                color: colorScheme.onSurface,
                               ),
                               onPressed: () {},
                             ),
+                            const SizedBox(width: 4),
                           ],
-                          backgroundColor: Colors.white,
-                          elevation: 0.5,
+                          backgroundColor: colorScheme.surface,
+                          elevation: 0,
+                          scrolledUnderElevation: 0,
                         ),
                         SliverPadding(
                           padding: const EdgeInsets.only(top: 8, bottom: 80),
@@ -131,15 +136,13 @@ class _FeedScreenState extends State<FeedScreen> {
                 } else if (state is FeedError) {
                   return Center(child: Text(state.message));
                 }
-                return const Center(child: Text('Memuat Laporan...'));
+                return const Center(child: CircularProgressIndicator());
               },
             ),
 
-            const Center(
-              child: Text('Halaman Near Me (Peta Laporan Terdekat)'),
-            ),
+            const NearMeScreen(),
 
-            const Center(child: Text('Halaman Statistik & Grafik Laporan')),
+            const StatsScreen(),
 
             const ProfileScreen(),
           ],
@@ -147,25 +150,12 @@ class _FeedScreenState extends State<FeedScreen> {
         bottomNavigationBar: Container(
           decoration: BoxDecoration(
             border: Border(
-              top: BorderSide(color: Colors.grey.shade200, width: 1),
+              top: BorderSide(color: colorScheme.outline, width: 0.5),
             ),
           ),
           child: BottomNavigationBar(
             currentIndex: _currentIndex,
-            onTap: (index) {
-              setState(() {
-                _currentIndex = index;
-              });
-            },
-            type: BottomNavigationBarType.fixed,
-            backgroundColor: Colors.white,
-            selectedItemColor: const Color(0xFFE53935),
-            unselectedItemColor: Colors.grey.shade500,
-            selectedLabelStyle: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-            ),
-            unselectedLabelStyle: const TextStyle(fontSize: 12),
+            onTap: _onTabTapped,
             items: const [
               BottomNavigationBarItem(
                 icon: Icon(Icons.feed_outlined),

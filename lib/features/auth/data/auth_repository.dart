@@ -141,18 +141,14 @@ class AuthRepository {
     }
 
     if (updates.isNotEmpty) {
+      // 1. Sync reports
       try {
         final reportsQuery = await _firestore
             .collection('reports')
             .where('authorId', isEqualTo: uid)
             .get();
 
-        final commentsQuery = await _firestore
-            .collectionGroup('comments')
-            .where('authorId', isEqualTo: uid)
-            .get();
-
-        if (reportsQuery.docs.isNotEmpty || commentsQuery.docs.isNotEmpty) {
+        if (reportsQuery.docs.isNotEmpty) {
           final batch = _firestore.batch();
           
           String badge = 'Citizen Reporter';
@@ -173,6 +169,22 @@ class AuthRepository {
             });
           }
 
+          await batch.commit();
+        }
+      } catch (e) {
+        print('Error syncing reports: $e');
+      }
+
+      // 2. Sync comments (may fail if collectionGroup index is not created)
+      try {
+        final commentsQuery = await _firestore
+            .collectionGroup('comments')
+            .where('authorId', isEqualTo: uid)
+            .get();
+
+        if (commentsQuery.docs.isNotEmpty) {
+          final batch = _firestore.batch();
+
           for (final doc in commentsQuery.docs) {
             batch.update(doc.reference, {
               'authorName': updated.name,
@@ -184,7 +196,7 @@ class AuthRepository {
           await batch.commit();
         }
       } catch (e) {
-        print('Error syncing reports/comments: $e');
+        print('Error syncing comments (possibly missing collectionGroup index): $e');
       }
     }
 

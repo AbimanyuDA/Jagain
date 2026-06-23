@@ -51,6 +51,7 @@ class ReportPost {
   final String userAvatarUrl;
   final String userBadge;
   final DateTime createdAt;
+  final DateTime updatedAt;
   final String title;
   final String description;
   final String imageUrl;
@@ -59,11 +60,16 @@ class ReportPost {
   final String urgency;
   final ReportPostStatus status;
   final String wilayah;
+  final String provinsi;
   final int upvotes;
   final int updatesCount;
   final int repliesCount;
   final bool isUpvoted;
   final bool isDownvoted;
+
+  // Location coordinates for validation feature
+  final double? latitude;
+  final double? longitude;
 
   const ReportPost({
     required this.id,
@@ -72,6 +78,7 @@ class ReportPost {
     required this.userAvatarUrl,
     required this.userBadge,
     required this.createdAt,
+    required this.updatedAt,
     required this.title,
     required this.description,
     required this.imageUrl,
@@ -80,11 +87,14 @@ class ReportPost {
     required this.urgency,
     this.status = ReportPostStatus.waitingReview,
     this.wilayah = '',
+    this.provinsi = '',
     required this.upvotes,
     required this.updatesCount,
     required this.repliesCount,
     this.isUpvoted = false,
     this.isDownvoted = false,
+    this.latitude,
+    this.longitude,
   });
 
   String get timeAgo => timeAgoText(createdAt);
@@ -102,6 +112,7 @@ class ReportPost {
       userAvatarUrl: userAvatarUrl,
       userBadge: userBadge,
       createdAt: createdAt,
+      updatedAt: updatedAt,
       title: title,
       description: description,
       imageUrl: imageUrl,
@@ -110,11 +121,14 @@ class ReportPost {
       urgency: urgency,
       status: status,
       wilayah: wilayah,
+      provinsi: provinsi,
       upvotes: upvotes ?? this.upvotes,
       updatesCount: updatesCount,
       repliesCount: repliesCount ?? this.repliesCount,
       isUpvoted: isUpvoted ?? this.isUpvoted,
       isDownvoted: isDownvoted ?? this.isDownvoted,
+      latitude: latitude,
+      longitude: longitude,
     );
   }
 }

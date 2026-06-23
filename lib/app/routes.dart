@@ -1,22 +1,26 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../features/auth/presentation/login_screen.dart';
 import '../features/auth/presentation/register_screen.dart';
-import '../features/auth/presentation/bloc/auth_bloc.dart';
-import '../features/auth/presentation/bloc/auth_state.dart';
-import '../features/auth/domain/user_model.dart';
 import '../features/feed/presentation/feed_screen.dart';
+import '../features/feed/presentation/report_detail_screen.dart';
+import '../features/feed/domain/models/report_post.dart';
 import '../features/report_creation/presentation/create_report_screen.dart';
-import '../features/pejabat_dashboard/presentation/pejabat_dashboard_screen.dart';
 import '../features/admin_panel/presentation/admin_dashboard_screen.dart';
-import '../features/admin_panel/presentation/report_moderation_screen.dart';
-import '../features/admin_panel/presentation/official_verification_screen.dart';
 import '../features/admin_panel/presentation/category_management_screen.dart';
+import '../features/admin_panel/presentation/official_verification_screen.dart';
+import '../features/admin_panel/presentation/report_moderation_screen.dart';
 import '../features/admin_panel/presentation/system_analytics_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import '../features/profile/presentation/edit_profile_screen.dart';
+import '../features/auth/presentation/bloc/auth_bloc.dart';
+import '../features/auth/presentation/bloc/auth_state.dart';
+import '../features/auth/domain/user_model.dart';
+import '../features/pejabat_dashboard/presentation/pejabat_dashboard_screen.dart';
+import '../features/pejabat_dashboard/presentation/pejabat_report_list_screen.dart';
 import '../features/settings/presentation/settings_screen.dart';
 import '../features/settings/presentation/request_official_screen.dart';
 
@@ -56,6 +60,7 @@ class AppRoutes {
   static const String editProfile = '/edit-profile';
   static const String settings = '/settings';
   static const String requestOfficial = '/request-official';
+  static const String pejabatReportList = '/pejabat/reports';
 
   static GoRouter createRouter(BuildContext context) {
     final authBloc = context.read<AuthBloc>();
@@ -67,6 +72,10 @@ class AppRoutes {
         final authState = authBloc.state;
         final isPublicRoute = _publicRoutes.contains(state.matchedLocation);
 
+        if (authState is AuthSwitching) {
+          return null;
+        }
+
         // Masih loading → tunggu, jangan redirect dulu
         if (authState is AuthLoading || authState is AuthInitial) {
           return isPublicRoute ? null : login;
@@ -77,8 +86,12 @@ class AppRoutes {
         // Belum login dan bukan halaman publik → paksa ke login
         if (!isLoggedIn && !isPublicRoute) return login;
 
-        // Sudah login tapi masih di halaman login/register → arahkan ke feed
-        if (isLoggedIn && isPublicRoute) return feed;
+        // Sudah login tapi masih di halaman login/register → arahkan ke feed (kecuali jika sedang menambah akun baru)
+        if (isLoggedIn && isPublicRoute) {
+          final isAdding = state.uri.queryParameters['adding'] == 'true';
+          if (isAdding) return null;
+          return feed;
+        }
 
         // Role guard: cek akses halaman terproteksi
         if (authState is AuthAuthenticated) {
@@ -88,8 +101,8 @@ class AppRoutes {
           // Hanya admin yang boleh akses /admin
           if (loc == adminDashboard && user.role != UserRole.admin) return feed;
 
-          // Hanya official yang boleh akses /pejabat
-          if (loc == pejabatDashboard && user.role != UserRole.official) return feed;
+          // Hanya official yang boleh akses /pejabat*
+          if (loc.startsWith(pejabatDashboard) && user.role != UserRole.official) return feed;
         }
 
         // Lainnya → tidak ada redirect
@@ -98,51 +111,70 @@ class AppRoutes {
       routes: [
         GoRoute(
           path: feed,
-          builder: (BuildContext context, GoRouterState state) => const FeedScreen(),
+          builder: (BuildContext context, GoRouterState state) =>
+              const FeedScreen(),
+        ),
+        GoRoute(
+          path: '/report-detail',
+          builder: (BuildContext context, GoRouterState state) {
+            final post = state.extra as ReportPost;
+            return ReportDetailScreen(post: post);
+          },
         ),
         GoRoute(
           path: login,
-          builder: (BuildContext context, GoRouterState state) => const LoginScreen(),
+          builder: (BuildContext context, GoRouterState state) =>
+              const LoginScreen(),
         ),
         GoRoute(
           path: register,
-          builder: (BuildContext context, GoRouterState state) => const RegisterScreen(),
+          builder: (BuildContext context, GoRouterState state) =>
+              const RegisterScreen(),
         ),
         GoRoute(
           path: createReport,
-          builder: (BuildContext context, GoRouterState state) => const CreateReportScreen(),
+          builder: (BuildContext context, GoRouterState state) =>
+              const CreateReportScreen(),
         ),
         GoRoute(
           path: pejabatDashboard,
-          builder: (BuildContext context, GoRouterState state) => const PejabatDashboardScreen(),
+          builder: (BuildContext context, GoRouterState state) =>
+              const PejabatDashboardScreen(),
         ),
         GoRoute(
           path: adminDashboard,
-          builder: (BuildContext context, GoRouterState state) => const AdminDashboardScreen(),
+          builder: (BuildContext context, GoRouterState state) =>
+              const AdminDashboardScreen(),
         ),
         GoRoute(
           path: adminModeration,
-          builder: (BuildContext context, GoRouterState state) => const ReportModerationScreen(),
+          builder: (BuildContext context, GoRouterState state) =>
+              const ReportModerationScreen(),
         ),
         GoRoute(
           path: adminOfficials,
-          builder: (BuildContext context, GoRouterState state) => const OfficialVerificationScreen(),
+          builder: (BuildContext context, GoRouterState state) =>
+              const OfficialVerificationScreen(),
         ),
         GoRoute(
           path: adminCategories,
-          builder: (BuildContext context, GoRouterState state) => const CategoryManagementScreen(),
+          builder: (BuildContext context, GoRouterState state) =>
+              const CategoryManagementScreen(),
         ),
         GoRoute(
           path: adminAnalytics,
-          builder: (BuildContext context, GoRouterState state) => const SystemAnalyticsScreen(),
+          builder: (BuildContext context, GoRouterState state) =>
+              const SystemAnalyticsScreen(),
         ),
         GoRoute(
           path: profile,
-          builder: (BuildContext context, GoRouterState state) => const ProfileScreen(),
+          builder: (BuildContext context, GoRouterState state) =>
+              const ProfileScreen(),
         ),
         GoRoute(
           path: editProfile,
-          builder: (BuildContext context, GoRouterState state) => const EditProfileScreen(),
+          builder: (BuildContext context, GoRouterState state) =>
+              const EditProfileScreen(),
         ),
         GoRoute(
           path: '/profile/:username',
@@ -158,6 +190,13 @@ class AppRoutes {
         GoRoute(
           path: requestOfficial,
           builder: (BuildContext context, GoRouterState state) => const RequestOfficialScreen(),
+        ),
+        GoRoute(
+          path: pejabatReportList,
+          builder: (BuildContext context, GoRouterState state) {
+            final status = state.extra as ReportPostStatus?;
+            return PejabatReportListScreen(initialStatus: status);
+          },
         ),
       ],
     );
