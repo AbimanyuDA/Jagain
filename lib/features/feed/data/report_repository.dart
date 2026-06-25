@@ -32,7 +32,6 @@ class ReportRepository {
         );
   }
 
-  // COMMENTED replaced by new scoped query
   // Stream<List<ReportPost>> watchReportsByWilayah(
   //   String wilayah, {
   //   String? currentUserId,
@@ -66,8 +65,6 @@ class ReportRepository {
     });
   }
 
-  // COMMENTED: replaced by new scoped query
-  // /// Laporan berdasarkan wilayah pejabat, dengan optional filter status
   // Stream<List<ReportPost>> watchReportsByWilayahFiltered(
   //   String wilayah, {
   //   ReportPostStatus? status,
@@ -161,9 +158,6 @@ class ReportRepository {
       'createdAt': Timestamp.now(),
     });
 
-    // statusUpdateCount harus naik tepat 1x per dokumen update yang dibuat.
-    // updateReportStatus juga menaikkan statusUpdateCount, jadi kalau status
-    // ikut berubah, increment dilakukan di sana saja (hindari double count).
     if (newStatus != null) {
       await updateReportStatus(reportId: reportId, newStatus: newStatus);
     } else {
